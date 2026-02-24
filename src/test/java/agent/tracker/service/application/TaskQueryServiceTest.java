@@ -81,6 +81,52 @@ class TaskQueryServiceTest {
         assertNull(page.nextCursor());
     }
 
+    @Test
+    void shouldRejectCursorThatWouldOverflowNextCursorComputation() {
+        TaskStore overflowStore = new TaskStore() {
+            @Override
+            public Task findTaskById(String taskId) {
+                return null;
+            }
+
+            @Override
+            public List<Task> listTasks(TaskStatus status) {
+                return List.of();
+            }
+
+            @Override
+            public TaskStorePage listTasksPage(TaskStatus status, int offset, int limit) {
+                return new TaskStorePage(List.of(task("overflow")), true);
+            }
+
+            @Override
+            public Task findCreateReplay(String idempotencyKey, String payloadHash) {
+                return null;
+            }
+
+            @Override
+            public Task findStatusReplay(String taskId, String idempotencyKey, String payloadHash) {
+                return null;
+            }
+
+            @Override
+            public void saveCreateReplay(String idempotencyKey, String payloadHash, Task task) {
+            }
+
+            @Override
+            public void saveStatusReplay(String taskId, String idempotencyKey, String payloadHash, Task task) {
+            }
+
+            @Override
+            public Task save(Task task) {
+                return task;
+            }
+        };
+        TaskQueryService service = new TaskQueryService(overflowStore);
+
+        assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, String.valueOf(Integer.MAX_VALUE), 1));
+    }
+
     private static Task task(String taskId) {
         Instant fixed = Instant.parse("2026-01-01T00:00:00Z");
         return Task.builder()

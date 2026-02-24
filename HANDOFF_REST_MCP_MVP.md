@@ -27,6 +27,7 @@ Last updated: 2026-02-24 (PST, release-evidence workflow pass)
    - `./gradlew check`
 2. Complete release evidence fields in PR and handoff using `docs/release-evidence.md`.
 3. **TKT-P1-G17:** run final canonical-reference sweep for any stragglers.
+4. **TKT-P2-A18:** keep phase-2 cursor migration plan updated in `docs/cursor-evolution-phase2-plan.md`.
 
 ## Done criteria for immediate next slice
 - PR shows green CI with `./gradlew check`.

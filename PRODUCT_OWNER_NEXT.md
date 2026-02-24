@@ -78,6 +78,7 @@ Define phase-2 token evolution without changing external fields (`cursor`, `next
 **Scope**
 - Document migration phases and rollback posture.
 - Define mixed-token REST/MCP parity test plan.
+- Maintain canonical planning artifact at `docs/cursor-evolution-phase2-plan.md`.
 
 **Acceptance criteria**
 - Backward compatibility for legacy offset callers is explicit.

@@ -35,7 +35,7 @@ public class TaskQueryService {
         int offset = decodeCursor(cursor);
 
         TaskStorePage page = store.listTasksPage(status, offset, resolvedLimit);
-        String nextCursor = page.hasMore() ? String.valueOf(offset + page.tasks().size()) : null;
+        String nextCursor = page.hasMore() ? String.valueOf(safeNextOffset(offset, page.tasks().size())) : null;
         return new TaskListPage(page.tasks(), nextCursor);
     }
 
@@ -47,6 +47,14 @@ public class TaskQueryService {
             throw new IllegalArgumentException("limit must be between 1 and " + MAX_LIMIT);
         }
         return limit;
+    }
+
+    private static int safeNextOffset(int offset, int pageSize) {
+        try {
+            return Math.addExact(offset, pageSize);
+        } catch (ArithmeticException exception) {
+            throw new IllegalArgumentException("cursor is too large to paginate safely");
+        }
     }
 
     private static int decodeCursor(String cursor) {
