@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @MicronautTest
@@ -126,5 +127,27 @@ class MongoTaskStoreIntegrationTest {
                 "mongo-create-mismatch-1"
             ))
         );
+    }
+
+    @Test
+    void shouldSupportCursorPaginationFromMongoStorePath() {
+        for (int i = 0; i < 3; i++) {
+            commandService.createTask(new CreateTaskCommand(
+                "mongo-page-" + i,
+                "desc",
+                TaskType.FEATURE,
+                TaskPriority.MEDIUM,
+                "integration",
+                "mongo-page-key-" + i
+            ));
+        }
+
+        TaskListPage first = queryService.listTasks(null, null, 2);
+        assertEquals(2, first.tasks().size());
+        assertNotNull(first.nextCursor());
+
+        TaskListPage second = queryService.listTasks(null, first.nextCursor(), 2);
+        assertEquals(1, second.tasks().size());
+        assertNull(second.nextCursor());
     }
 }

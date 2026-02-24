@@ -74,5 +74,5 @@ Implemented:
 
 ## Active architectural focus (post-MVP)
 1. **OpenAPI snapshot reconciliation for newly shipped pagination/correlation fields** (expected drift until Java 21 local regen run).
-2. **Store-level pagination optimization** (move from full-list then slice to DB-backed/seek strategy without contract break).
+2. **Store-level pagination optimization** ✅ completed for Mongo offset windows (`TaskStore#listTasksPage` + `Pageable`/`Slice`), with external cursor contract preserved.
 3. Continue API surface hygiene so deferred project artifacts remain internal-only and non-routable.

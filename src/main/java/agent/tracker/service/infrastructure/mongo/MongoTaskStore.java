@@ -1,6 +1,7 @@
 package agent.tracker.service.infrastructure.mongo;
 
 import agent.tracker.service.application.TaskStore;
+import agent.tracker.service.application.TaskStorePage;
 import agent.tracker.service.domain.exception.ConcurrentModificationException;
 import agent.tracker.service.domain.exception.IdempotencyKeyReuseMismatchException;
 import agent.tracker.service.domain.model.AgentRef;
@@ -10,13 +11,20 @@ import agent.tracker.service.domain.model.TaskStatus;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.data.exceptions.OptimisticLockException;
+import io.micronaut.data.model.Pageable;
+import io.micronaut.data.model.Sort;
+import io.micronaut.data.model.Slice;
 import jakarta.inject.Singleton;
 import java.time.Instant;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 @Requires(property = "task.store", value = "mongo")
 public class MongoTaskStore implements TaskStore {
+
+    private static final Logger LOG = LoggerFactory.getLogger(MongoTaskStore.class);
 
     private final TaskMongoRepository taskRepository;
     private final IdempotencyMongoRepository idempotencyRepository;
@@ -43,6 +51,20 @@ public class MongoTaskStore implements TaskStore {
             ? taskRepository.findAllByOrderByUpdatedAtDescTaskIdDesc()
             : taskRepository.findByStatusOrderByUpdatedAtDescTaskIdDesc(status);
         return docs.stream().map(this::toDomain).toList();
+    }
+
+    @Override
+    public TaskStorePage listTasksPage(TaskStatus status, int offset, int limit) {
+        Pageable pageable = Pageable.from(offset, limit, Sort.of(
+            Sort.Order.desc("updatedAt"),
+            Sort.Order.desc("taskId")
+        ));
+
+        Slice<TaskDocument> slice = status == null
+            ? taskRepository.findAll(pageable)
+            : taskRepository.findByStatus(status, pageable);
+
+        return new TaskStorePage(slice.getContent().stream().map(this::toDomain).toList(), slice.hasNext());
     }
 
     @Override
@@ -114,6 +136,7 @@ public class MongoTaskStore implements TaskStore {
             if (!isDuplicateIdempotencyKey(exception)) {
                 throw exception;
             }
+            LOG.debug("event=idempotency.duplicate_insert_race operation={} key={}", operation, key);
             // race on first insert; read-path remains idempotent
         }
     }
@@ -177,7 +200,14 @@ public class MongoTaskStore implements TaskStore {
     }
 
     private static boolean isDuplicateIdempotencyKey(RuntimeException exception) {
-        String message = exception.getMessage();
-        return message != null && message.contains("E11000");
+        Throwable current = exception;
+        while (current != null) {
+            String message = current.getMessage();
+            if (message != null && message.contains("E11000")) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 }

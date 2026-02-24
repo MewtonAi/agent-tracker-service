@@ -24,10 +24,18 @@ public class InMemoryTaskStore implements TaskStore {
 
     @Override
     public List<Task> listTasks(TaskStatus status) {
-        return tasks.values().stream()
-            .filter(task -> status == null || status == task.getStatus())
-            .sorted(Comparator.comparing((Task t) -> t.getAudit().getUpdatedAt()).reversed().thenComparing(Task::getTaskId, Comparator.reverseOrder()))
-            .toList();
+        return sortedTasks(status);
+    }
+
+    @Override
+    public TaskStorePage listTasksPage(TaskStatus status, int offset, int limit) {
+        List<Task> sorted = sortedTasks(status);
+        if (offset >= sorted.size()) {
+            return new TaskStorePage(List.of(), false);
+        }
+
+        int toIndex = Math.min(offset + limit, sorted.size());
+        return new TaskStorePage(sorted.subList(offset, toIndex), toIndex < sorted.size());
     }
 
     @Override
@@ -56,6 +64,13 @@ public class InMemoryTaskStore implements TaskStore {
     public Task save(Task task) {
         tasks.put(task.getTaskId(), task);
         return task;
+    }
+
+    private List<Task> sortedTasks(TaskStatus status) {
+        return tasks.values().stream()
+            .filter(task -> status == null || status == task.getStatus())
+            .sorted(Comparator.comparing((Task t) -> t.getAudit().getUpdatedAt()).reversed().thenComparing(Task::getTaskId, Comparator.reverseOrder()))
+            .toList();
     }
 
     private static String statusScope(String taskId, String idempotencyKey) {

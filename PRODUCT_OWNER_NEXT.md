@@ -106,3 +106,13 @@ Improve list performance at scale while preserving REST/MCP external contract.
 - Canonical MCP correlation policy: `ADR-012-mcp-correlation-id-canonicalization-policy.md`.
 - Canonical pagination policy: `ADR-013-task-list-pagination-ordering-contract.md`.
 - Canonical governance for duplicates/supersession: `ADR-014-contract-source-of-truth-and-supersession-policy.md`.
+
+## 7) 2026-02-24 developer run delta (subagent)
+- Implemented store-level page retrieval contract in application boundary via `TaskStore#listTasksPage(TaskStatus, offset, limit)` and `TaskStorePage`.
+- Rewired `TaskQueryService` to use store-provided page windows (no service-layer full-list slicing).
+- Added Mongo paged read path using `Pageable` + `Slice` with deterministic sort (`updatedAt DESC`, `taskId DESC`).
+- Extended tests:
+  - `TaskQueryServiceTest` now verifies delegation to store paging window.
+  - `MongoTaskStoreIntegrationTest` now verifies cursor paging (`nextCursor` progression and terminal `null`).
+- Reliability hardening: duplicate idempotency-key detection now scans nested exception causes; duplicate insert race is debug-logged.
+- OpenAPI snapshot regeneration/check still blocked in this shell (Java 21/JAVA_HOME absent).

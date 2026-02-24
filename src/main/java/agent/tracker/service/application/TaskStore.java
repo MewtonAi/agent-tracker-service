@@ -9,6 +9,16 @@ public interface TaskStore {
 
     List<Task> listTasks(TaskStatus status);
 
+    default TaskStorePage listTasksPage(TaskStatus status, int offset, int limit) {
+        List<Task> tasks = listTasks(status);
+        if (offset >= tasks.size()) {
+            return new TaskStorePage(List.of(), false);
+        }
+
+        int toIndex = Math.min(offset + limit, tasks.size());
+        return new TaskStorePage(tasks.subList(offset, toIndex), toIndex < tasks.size());
+    }
+
     Task findCreateReplay(String idempotencyKey, String payloadHash);
 
     Task findStatusReplay(String taskId, String idempotencyKey, String payloadHash);

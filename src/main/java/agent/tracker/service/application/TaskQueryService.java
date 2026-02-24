@@ -34,15 +34,9 @@ public class TaskQueryService {
         int resolvedLimit = resolveLimit(limit);
         int offset = decodeCursor(cursor);
 
-        List<Task> tasks = store.listTasks(status);
-        if (offset >= tasks.size()) {
-            return new TaskListPage(List.of(), null);
-        }
-
-        int toIndex = Math.min(offset + resolvedLimit, tasks.size());
-        List<Task> page = tasks.subList(offset, toIndex);
-        String nextCursor = toIndex < tasks.size() ? String.valueOf(toIndex) : null;
-        return new TaskListPage(page, nextCursor);
+        TaskStorePage page = store.listTasksPage(status, offset, resolvedLimit);
+        String nextCursor = page.hasMore() ? String.valueOf(offset + page.tasks().size()) : null;
+        return new TaskListPage(page.tasks(), nextCursor);
     }
 
     private static int resolveLimit(Integer limit) {

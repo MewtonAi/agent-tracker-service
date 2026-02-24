@@ -32,6 +32,19 @@ class TaskQueryServiceTest {
     }
 
     @Test
+    void shouldDelegatePaginationWindowToStore() {
+        StubTaskStore store = new StubTaskStore(List.of(task("t-1"), task("t-2"), task("t-3")));
+        TaskQueryService service = new TaskQueryService(store);
+
+        service.listTasks(null, "1", 2);
+
+        assertEquals(1, store.lastOffset);
+        assertEquals(2, store.lastLimit);
+        assertEquals(1, store.listPageCalls);
+        assertEquals(0, store.fullListCalls);
+    }
+
+    @Test
     void shouldRejectInvalidCursorAndLimitBounds() {
         TaskQueryService service = new TaskQueryService(new StubTaskStore(List.of(task("t-1"))));
 
@@ -71,6 +84,10 @@ class TaskQueryServiceTest {
 
     private static final class StubTaskStore implements TaskStore {
         private final List<Task> tasks;
+        private int fullListCalls;
+        private int listPageCalls;
+        private int lastOffset = -1;
+        private int lastLimit = -1;
 
         private StubTaskStore(List<Task> tasks) {
             this.tasks = new ArrayList<>(tasks);
@@ -83,10 +100,22 @@ class TaskQueryServiceTest {
 
         @Override
         public List<Task> listTasks(TaskStatus status) {
-            return tasks.stream()
-                .filter(task -> status == null || task.getStatus() == status)
-                .sorted(Comparator.comparing((Task task) -> task.getAudit().getUpdatedAt()).reversed().thenComparing(Task::getTaskId, Comparator.reverseOrder()))
-                .toList();
+            fullListCalls++;
+            return ordered(status);
+        }
+
+        @Override
+        public TaskStorePage listTasksPage(TaskStatus status, int offset, int limit) {
+            listPageCalls++;
+            lastOffset = offset;
+            lastLimit = limit;
+
+            List<Task> ordered = ordered(status);
+            if (offset >= ordered.size()) {
+                return new TaskStorePage(List.of(), false);
+            }
+            int toIndex = Math.min(offset + limit, ordered.size());
+            return new TaskStorePage(ordered.subList(offset, toIndex), toIndex < ordered.size());
         }
 
         @Override
@@ -111,6 +140,13 @@ class TaskQueryServiceTest {
         public Task save(Task task) {
             tasks.add(task);
             return task;
+        }
+
+        private List<Task> ordered(TaskStatus status) {
+            return tasks.stream()
+                .filter(task -> status == null || task.getStatus() == status)
+                .sorted(Comparator.comparing((Task task) -> task.getAudit().getUpdatedAt()).reversed().thenComparing(Task::getTaskId, Comparator.reverseOrder()))
+                .toList();
         }
     }
 }
