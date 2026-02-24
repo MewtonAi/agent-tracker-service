@@ -40,6 +40,7 @@ Preflight:
 java -version
 echo $JAVA_HOME
 ```
+If Java 21 is unavailable locally, run verification via CI (`ci-java21`) and record that source in `docs/release-evidence.md` per ADR-021.
 
 Run:
 ```bash

@@ -63,6 +63,7 @@ class ReleaseReadinessDocumentationContractTest {
         assertTrue(readme.contains("ADR-019"));
         assertTrue(readme.contains("ADR-020"));
         assertTrue(readme.contains("ADR-021"));
+        assertTrue(readme.contains("ci-java21"));
 
         assertTrue(productBacklog.contains("ADR-012/013/014/015/016/017/018/019/020/021"));
         assertTrue(roadmap.contains("ADR-018"));
@@ -92,6 +93,9 @@ class ReleaseReadinessDocumentationContractTest {
 
         assertTrue(prTemplate.contains("docs/release-evidence.md"));
         assertTrue(prTemplate.contains("verifyOpenApiSnapshot"));
+        assertTrue(prTemplate.contains("nextCursor"));
+        assertTrue(prTemplate.contains("cursor"));
+        assertTrue(prTemplate.contains("limit"));
         assertTrue(prTemplate.contains("Canonical ADR set used"));
         assertTrue(prTemplate.contains("ADR-018"));
         assertTrue(prTemplate.contains("ADR-019"));

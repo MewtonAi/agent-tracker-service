@@ -21,8 +21,16 @@ class OpenApiSnapshotContractTest {
         assertTrue(snapshot.contains("/v1/tasks/{taskId}/status:"));
         assertTrue(snapshot.contains("CONCURRENT_MODIFICATION"));
         assertTrue(snapshot.contains("IDEMPOTENCY_KEY_REUSE_MISMATCH"));
-        assertTrue(snapshot.contains("nextCursor"));
-        assertTrue(snapshot.contains("limit"));
-        assertTrue(snapshot.contains("cursor"));
+    }
+
+    @Test
+    void shouldContainListPaginationContractFields() throws IOException {
+        String snapshot = Files.readString(SNAPSHOT_PATH);
+
+        assertTrue(snapshot.contains("- in: query\n          name: cursor"));
+        assertTrue(snapshot.contains("- in: query\n          name: limit"));
+        assertTrue(snapshot.contains("properties:\n                  tasks:"));
+        assertTrue(snapshot.contains("nextCursor:"));
+        assertTrue(snapshot.contains("nullable: true"));
     }
 }

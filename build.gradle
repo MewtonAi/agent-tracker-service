@@ -127,9 +127,10 @@ tasks.register("verifyOpenApiSnapshot") {
             "/v1/tasks/{taskId}/status:",
             "CONCURRENT_MODIFICATION",
             "IDEMPOTENCY_KEY_REUSE_MISMATCH",
-            "nextCursor",
-            "cursor",
-            "limit"
+            "- in: query\n          name: cursor",
+            "- in: query\n          name: limit",
+            "nextCursor:",
+            "nullable: true"
         ].each { marker ->
             if (!snapshotText.contains(marker)) {
                 throw new GradleException("OpenAPI snapshot missing required marker '${marker}'.")

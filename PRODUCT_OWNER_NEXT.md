@@ -1,6 +1,6 @@
 # PRODUCT_OWNER_NEXT.md
 
-Last updated: 2026-02-24 (PST, product/architecture backlog refinement + ADR-021 Java21 provenance ladder)
+Last updated: 2026-02-24 (PST, OpenAPI pagination-marker hardening + Java21 provenance ladder)
 Owner: Product/Architecture
 
 ## 1) Current inspection snapshot (this pass)
@@ -22,6 +22,7 @@ Owner: Product/Architecture
 - Added ADR-021 for Java 21 toolchain readiness and verification provenance ladder policy.
 - Tightened release-planning artifacts to require explicit Java preflight declaration (`java -version`, `JAVA_HOME`, evidence source).
 - Refined roadmap/backlog/handoff language so lane closure explicitly includes toolchain unblock path before OpenAPI/CI reconciliation.
+- Hardened OpenAPI contract checks to assert concrete pagination markers (`query.cursor`, `query.limit`, `nextCursor` + nullable) instead of loose token-only matching, reducing false-green drift risk.
 
 ---
 

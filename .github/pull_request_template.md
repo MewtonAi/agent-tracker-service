@@ -15,6 +15,7 @@ Source of truth: `docs/release-evidence.md` (ADR-016 / ADR-017 / ADR-019 / ADR-0
 ### 2) OpenAPI snapshot evidence
 - [ ] `verifyOpenApiSnapshot` passed
 - [ ] `openapi/openapi.yaml` unchanged **or** intentionally updated in this PR
+- [ ] Pagination markers confirmed (`limit`, `cursor`, `nextCursor`)
 - [ ] If changed, rationale linked:
 
 ### 3) REST/MCP parity evidence
@@ -41,3 +42,4 @@ Source of truth: `docs/release-evidence.md` (ADR-016 / ADR-017 / ADR-019 / ADR-0
 - Decision owner:
 - Timestamp (PST):
 - Risk notes / follow-ups:
+

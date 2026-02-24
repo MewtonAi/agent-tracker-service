@@ -1,6 +1,6 @@
 # Developer Handoff — REST + MCP Readiness
 
-Last updated: 2026-02-24 (PST, ADR-021 Java21 provenance ladder + planning refresh)
+Last updated: 2026-02-24 (PST, OpenAPI pagination-marker hardening + ADR-021 planning refresh)
 
 ## What was accomplished in this pass
 - Re-inspected current docs/test/CI posture for REST+MCP release readiness.
@@ -10,6 +10,7 @@ Last updated: 2026-02-24 (PST, ADR-021 Java21 provenance ladder + planning refre
   - `JAVA_HOME` set/unset state
   - evidence source label (`local-java21` or `ci-java21`)
 - Re-prioritized backlog and roadmap to run toolchain-preflight ticket before OpenAPI reconciliation.
+- Hardened OpenAPI drift guardrails (Gradle + contract test) to require concrete pagination markers (`query.cursor`, `query.limit`, `nextCursor` nullable) so snapshot verification is less prone to false-positive marker matches.
 
 ## Current state to assume
 1. **CI gate:** `.github/workflows/ci.yml` runs JDK 21 + `./gradlew check`.
