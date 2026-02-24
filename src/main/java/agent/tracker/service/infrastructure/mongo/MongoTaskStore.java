@@ -40,8 +40,8 @@ public class MongoTaskStore implements TaskStore {
     @Override
     public List<Task> listTasks(TaskStatus status) {
         List<TaskDocument> docs = status == null
-            ? taskRepository.findAllByOrderByUpdatedAtDesc()
-            : taskRepository.findByStatusOrderByUpdatedAtDesc(status);
+            ? taskRepository.findAllByOrderByUpdatedAtDescTaskIdAsc()
+            : taskRepository.findByStatusOrderByUpdatedAtDescTaskIdAsc(status);
         return docs.stream().map(this::toDomain).toList();
     }
 

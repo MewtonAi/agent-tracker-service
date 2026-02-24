@@ -1,11 +1,13 @@
 package agent.tracker.service.mcp;
 
 import agent.tracker.service.api.dto.CreateTaskRequest;
+import agent.tracker.service.api.dto.ListTasksResponse;
 import agent.tracker.service.api.dto.TaskResponse;
 import agent.tracker.service.api.dto.UpdateTaskStatusRequest;
 import agent.tracker.service.domain.model.TaskPriority;
 import agent.tracker.service.domain.model.TaskStatus;
 import agent.tracker.service.domain.model.TaskType;
+import io.micronaut.core.type.Argument;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.client.HttpClient;
@@ -47,7 +49,8 @@ class TaskRestMcpParityTest {
             TaskType.FEATURE,
             TaskPriority.HIGH,
             "qa",
-            "parity-mcp-create-1"
+            "parity-mcp-create-1",
+            null
         ));
 
         assertEquals(restCreated.title(), mcpCreated.title());
@@ -78,7 +81,8 @@ class TaskRestMcpParityTest {
             TaskType.FEATURE,
             TaskPriority.HIGH,
             "qa",
-            "parity-mcp-mismatch-1"
+            "parity-mcp-mismatch-1",
+            null
         ));
 
         McpToolException mcpException = assertThrows(McpToolException.class, () ->
@@ -88,7 +92,8 @@ class TaskRestMcpParityTest {
                 TaskType.FEATURE,
                 TaskPriority.HIGH,
                 "qa",
-                "parity-mcp-mismatch-1"
+                "parity-mcp-mismatch-1",
+                null
             ))
         );
 
@@ -111,7 +116,8 @@ class TaskRestMcpParityTest {
             TaskType.BUG,
             TaskPriority.MEDIUM,
             "qa",
-            "parity-mcp-transition-create"
+            "parity-mcp-transition-create",
+            null
         ));
 
         TaskResponse restUpdated = client.toBlocking().retrieve(
@@ -124,13 +130,14 @@ class TaskRestMcpParityTest {
             mcpCreated.taskId(),
             TaskStatus.IN_PROGRESS,
             "qa",
-            "parity-mcp-transition-update"
+            "parity-mcp-transition-update",
+            null
         ));
 
         assertEquals(restUpdated.status(), mcpUpdated.status());
         assertEquals(TaskStatus.IN_PROGRESS, mcpUpdated.status());
 
-        TaskMcpTools.ListTasksToolResponse mcpList = mcpTools.listTasks(new TaskMcpTools.ListTasksToolRequest("in_progress"));
+        TaskMcpTools.ListTasksToolResponse mcpList = mcpTools.listTasks(new TaskMcpTools.ListTasksToolRequest("in_progress", null, null, null));
         assertTrue(mcpList.tasks().stream().anyMatch(task -> task.taskId().equals(mcpUpdated.taskId())));
     }
 
@@ -141,12 +148,12 @@ class TaskRestMcpParityTest {
         assertNotNull(badRequest.getCorrelationId());
         assertFalse(badRequest.getCorrelationId().isBlank());
 
+        String requestedCorrelationId = "corr-mcp-not-found-1";
         McpToolException notFound = assertThrows(McpToolException.class, () ->
-            mcpTools.getTask(new TaskMcpTools.GetTaskToolRequest("missing-correlation"))
+            mcpTools.getTask(new TaskMcpTools.GetTaskToolRequest("missing-correlation", requestedCorrelationId))
         );
         assertEquals("TASK_NOT_FOUND", notFound.getCode());
-        assertNotNull(notFound.getCorrelationId());
-        assertFalse(notFound.getCorrelationId().isBlank());
+        assertEquals(requestedCorrelationId, notFound.getCorrelationId());
 
         mcpTools.createTask(new TaskMcpTools.CreateTaskToolRequest(
             "Correlation mismatch",
@@ -154,7 +161,8 @@ class TaskRestMcpParityTest {
             TaskType.FEATURE,
             TaskPriority.HIGH,
             "qa",
-            "parity-mcp-correlation-mismatch-1"
+            "parity-mcp-correlation-mismatch-1",
+            null
         ));
         McpToolException mismatch = assertThrows(McpToolException.class, () ->
             mcpTools.createTask(new TaskMcpTools.CreateTaskToolRequest(
@@ -163,11 +171,36 @@ class TaskRestMcpParityTest {
                 TaskType.FEATURE,
                 TaskPriority.HIGH,
                 "qa",
-                "parity-mcp-correlation-mismatch-1"
+                "parity-mcp-correlation-mismatch-1",
+                "corr-mcp-mismatch-1"
             ))
         );
         assertEquals("IDEMPOTENCY_KEY_REUSE_MISMATCH", mismatch.getCode());
-        assertNotNull(mismatch.getCorrelationId());
-        assertFalse(mismatch.getCorrelationId().isBlank());
+        assertEquals("corr-mcp-mismatch-1", mismatch.getCorrelationId());
+    }
+
+    @Test
+    void shouldAlignPaginationAcrossRestAndMcp() {
+        for (int i = 0; i < 3; i++) {
+            client.toBlocking().retrieve(
+                HttpRequest.POST("/v1/tasks", new CreateTaskRequest("Page parity " + i, "desc", TaskType.FEATURE, TaskPriority.MEDIUM, "qa"))
+                    .header("Idempotency-Key", "parity-rest-page-" + i),
+                TaskResponse.class
+            );
+        }
+
+        ListTasksResponse restPage1 = client.toBlocking().retrieve(HttpRequest.GET("/v1/tasks?limit=2"), ListTasksResponse.class);
+        assertEquals(2, restPage1.tasks().size());
+        assertNotNull(restPage1.nextCursor());
+
+        ListTasksResponse restPage2 = client.toBlocking().retrieve(HttpRequest.GET("/v1/tasks?limit=2&cursor=" + restPage1.nextCursor()), ListTasksResponse.class);
+        assertTrue(restPage2.tasks().size() >= 1);
+
+        TaskMcpTools.ListTasksToolResponse mcpPage1 = mcpTools.listTasks(new TaskMcpTools.ListTasksToolRequest(null, null, 2, null));
+        assertEquals(restPage1.tasks().size(), mcpPage1.tasks().size());
+        assertEquals(restPage1.nextCursor(), mcpPage1.nextCursor());
+
+        TaskMcpTools.ListTasksToolResponse mcpPage2 = mcpTools.listTasks(new TaskMcpTools.ListTasksToolRequest(null, mcpPage1.nextCursor(), 2, null));
+        assertEquals(restPage2.tasks().size(), mcpPage2.tasks().size());
     }
 }

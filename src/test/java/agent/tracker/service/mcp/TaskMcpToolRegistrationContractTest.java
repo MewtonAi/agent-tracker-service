@@ -32,13 +32,13 @@ class TaskMcpToolRegistrationContractTest {
     @Test
     void shouldKeepRequestSchemaCriticalFieldsStable() {
         assertEquals(
-            Set.of("title", "description", "taskType", "priority", "requestedBy", "idempotencyKey"),
+            Set.of("title", "description", "taskType", "priority", "requestedBy", "idempotencyKey", "correlationId"),
             componentNames(TaskMcpTools.CreateTaskToolRequest.class)
         );
-        assertEquals(Set.of("taskId"), componentNames(TaskMcpTools.GetTaskToolRequest.class));
-        assertEquals(Set.of("status"), componentNames(TaskMcpTools.ListTasksToolRequest.class));
+        assertEquals(Set.of("taskId", "correlationId"), componentNames(TaskMcpTools.GetTaskToolRequest.class));
+        assertEquals(Set.of("status", "cursor", "limit", "correlationId"), componentNames(TaskMcpTools.ListTasksToolRequest.class));
         assertEquals(
-            Set.of("taskId", "status", "requestedBy", "idempotencyKey"),
+            Set.of("taskId", "status", "requestedBy", "idempotencyKey", "correlationId"),
             componentNames(TaskMcpTools.UpdateTaskStatusToolRequest.class)
         );
     }

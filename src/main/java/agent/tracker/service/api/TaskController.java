@@ -1,9 +1,11 @@
 package agent.tracker.service.api;
 
 import agent.tracker.service.api.dto.CreateTaskRequest;
+import agent.tracker.service.api.dto.ListTasksResponse;
 import agent.tracker.service.api.dto.TaskResponse;
 import agent.tracker.service.api.dto.UpdateTaskStatusRequest;
 import agent.tracker.service.application.TaskCommandService;
+import agent.tracker.service.application.TaskListPage;
 import agent.tracker.service.application.TaskQueryService;
 import agent.tracker.service.domain.contract.CreateTaskCommand;
 import agent.tracker.service.domain.contract.UpdateTaskStatusCommand;
@@ -22,7 +24,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 
 @Tag(name = "Tasks")
@@ -62,9 +63,14 @@ public class TaskController {
 
     @Operation(summary = "List tasks")
     @Get
-    public List<TaskResponse> list(@QueryValue(defaultValue = "") String status) {
+    public ListTasksResponse list(
+        @QueryValue(defaultValue = "") String status,
+        @QueryValue(defaultValue = "") String cursor,
+        @QueryValue(defaultValue = "50") Integer limit
+    ) {
         TaskStatus filter = parseStatusFilter(status);
-        return queryService.listTasks(filter).stream().map(TaskController::toResponse).toList();
+        TaskListPage page = queryService.listTasks(filter, cursor, limit);
+        return new ListTasksResponse(page.tasks().stream().map(TaskController::toResponse).toList(), page.nextCursor());
     }
 
     @Operation(summary = "Update task status")

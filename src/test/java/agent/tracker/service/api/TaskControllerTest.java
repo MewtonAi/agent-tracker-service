@@ -1,6 +1,7 @@
 package agent.tracker.service.api;
 
 import agent.tracker.service.api.dto.CreateTaskRequest;
+import agent.tracker.service.api.dto.ListTasksResponse;
 import agent.tracker.service.api.dto.TaskResponse;
 import agent.tracker.service.api.dto.UpdateTaskStatusRequest;
 import agent.tracker.service.domain.model.TaskPriority;
@@ -102,8 +103,26 @@ class TaskControllerTest {
             TaskResponse.class
         );
 
-        TaskResponse[] tasks = client.toBlocking().retrieve(HttpRequest.GET("/v1/tasks?status=in_progress"), TaskResponse[].class);
-        assertTrue(tasks.length > 0);
+        ListTasksResponse tasks = client.toBlocking().retrieve(HttpRequest.GET("/v1/tasks?status=in_progress"), ListTasksResponse.class);
+        assertTrue(tasks.tasks().size() > 0);
+    }
+
+    @Test
+    void shouldPaginateTaskList() {
+        for (int i = 0; i < 3; i++) {
+            client.toBlocking().retrieve(
+                HttpRequest.POST("/v1/tasks", new CreateTaskRequest("Paginate " + i, "desc", TaskType.FEATURE, TaskPriority.HIGH, "qa"))
+                    .header("Idempotency-Key", "rest-paginate-" + i),
+                TaskResponse.class
+            );
+        }
+
+        ListTasksResponse page1 = client.toBlocking().retrieve(HttpRequest.GET("/v1/tasks?limit=2"), ListTasksResponse.class);
+        assertEquals(2, page1.tasks().size());
+        assertNotNull(page1.nextCursor());
+
+        ListTasksResponse page2 = client.toBlocking().retrieve(HttpRequest.GET("/v1/tasks?limit=2&cursor=" + page1.nextCursor()), ListTasksResponse.class);
+        assertTrue(page2.tasks().size() >= 1);
     }
 
     @Test

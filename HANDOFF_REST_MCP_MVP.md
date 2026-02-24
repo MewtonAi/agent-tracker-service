@@ -44,3 +44,10 @@ Definition of done:
 - Preserve stable error `code` values while evolving payload shape/metadata behavior.
 - Keep contract tests as first-class gate to avoid transport drift.
 - Maintain backward compatibility for list callers that omit pagination params.
+
+## Update 2026-02-24 (developer subagent)
+- Added cursor pagination contract across transports (REST list envelope + MCP list request/response pagination fields).
+- Added MCP correlation-id propagation contract: request-provided token reused in errors; UUID fallback retained.
+- Expanded parity/contract tests accordingly.
+- Pending on maintainer machine: run ./gradlew updateOpenApiSnapshot check with Java 21 and commit regenerated openapi/openapi.yaml if drifted.
+

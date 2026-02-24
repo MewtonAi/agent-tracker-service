@@ -1,6 +1,7 @@
 package agent.tracker.service.mcp;
 
 import agent.tracker.service.application.TaskCommandService;
+import agent.tracker.service.application.TaskListPage;
 import agent.tracker.service.application.TaskQueryService;
 import agent.tracker.service.domain.contract.CreateTaskCommand;
 import agent.tracker.service.domain.contract.UpdateTaskStatusCommand;
@@ -33,49 +34,45 @@ public class TaskMcpTools {
     }
 
     public TaskToolResponse createTask(CreateTaskToolRequest request) {
-        return run(() -> {
-            CreateTaskToolRequest req = requireRequest(request, "createTask");
-            return toResponse(commandService.createTask(new CreateTaskCommand(
-                req.title(),
-                req.description(),
-                req.taskType(),
-                req.priority(),
-                req.requestedBy(),
-                requireText(req.idempotencyKey(), "idempotencyKey")
-            )));
-        });
+        CreateTaskToolRequest req = requireRequest(request, "createTask");
+        return run(req.correlationId(), () -> toResponse(commandService.createTask(new CreateTaskCommand(
+            req.title(),
+            req.description(),
+            req.taskType(),
+            req.priority(),
+            req.requestedBy(),
+            requireText(req.idempotencyKey(), "idempotencyKey")
+        ))));
     }
 
     public TaskToolResponse getTask(GetTaskToolRequest request) {
-        return run(() -> {
-            GetTaskToolRequest req = requireRequest(request, "getTask");
-            return toResponse(queryService.getTaskById(requireText(req.taskId(), "taskId")));
-        });
+        GetTaskToolRequest req = requireRequest(request, "getTask");
+        return run(req.correlationId(), () -> toResponse(queryService.getTaskById(requireText(req.taskId(), "taskId"))));
     }
 
     public ListTasksToolResponse listTasks(ListTasksToolRequest request) {
-        return run(() -> {
-            ListTasksToolRequest req = requireRequest(request, "listTasks");
+        ListTasksToolRequest req = requireRequest(request, "listTasks");
+        return run(req.correlationId(), () -> {
+            TaskListPage page = queryService.listTasks(parseStatusFilter(req.status()), req.cursor(), req.limit());
             return new ListTasksToolResponse(
-                queryService.listTasks(parseStatusFilter(req.status())).stream().map(TaskMcpTools::toResponse).toList()
+                page.tasks().stream().map(TaskMcpTools::toResponse).toList(),
+                page.nextCursor()
             );
         });
     }
 
     public TaskToolResponse updateTaskStatus(UpdateTaskStatusToolRequest request) {
-        return run(() -> {
-            UpdateTaskStatusToolRequest req = requireRequest(request, "updateTaskStatus");
-            return toResponse(commandService.updateTaskStatus(new UpdateTaskStatusCommand(
-                requireText(req.taskId(), "taskId"),
-                req.status(),
-                req.requestedBy(),
-                requireText(req.idempotencyKey(), "idempotencyKey")
-            )));
-        });
+        UpdateTaskStatusToolRequest req = requireRequest(request, "updateTaskStatus");
+        return run(req.correlationId(), () -> toResponse(commandService.updateTaskStatus(new UpdateTaskStatusCommand(
+            requireText(req.taskId(), "taskId"),
+            req.status(),
+            req.requestedBy(),
+            requireText(req.idempotencyKey(), "idempotencyKey")
+        ))));
     }
 
-    private static <T> T run(CheckedSupplier<T> supplier) {
-        String correlationId = UUID.randomUUID().toString();
+    private static <T> T run(String requestedCorrelationId, CheckedSupplier<T> supplier) {
+        String correlationId = resolveCorrelationId(requestedCorrelationId);
         try {
             return supplier.get();
         } catch (NotFoundException exception) {
@@ -134,6 +131,13 @@ public class TaskMcpTools {
         return value.trim();
     }
 
+    private static String resolveCorrelationId(String requestedCorrelationId) {
+        if (requestedCorrelationId == null || requestedCorrelationId.isBlank()) {
+            return UUID.randomUUID().toString();
+        }
+        return requestedCorrelationId.trim();
+    }
+
     @FunctionalInterface
     private interface CheckedSupplier<T> {
         T get();
@@ -145,25 +149,27 @@ public class TaskMcpTools {
         TaskType taskType,
         TaskPriority priority,
         String requestedBy,
-        String idempotencyKey
+        String idempotencyKey,
+        String correlationId
     ) {
     }
 
-    public record GetTaskToolRequest(String taskId) {
+    public record GetTaskToolRequest(String taskId, String correlationId) {
     }
 
-    public record ListTasksToolRequest(String status) {
+    public record ListTasksToolRequest(String status, String cursor, Integer limit, String correlationId) {
     }
 
     public record UpdateTaskStatusToolRequest(
         String taskId,
         TaskStatus status,
         String requestedBy,
-        String idempotencyKey
+        String idempotencyKey,
+        String correlationId
     ) {
     }
 
-    public record ListTasksToolResponse(List<TaskToolResponse> tasks) {
+    public record ListTasksToolResponse(List<TaskToolResponse> tasks, String nextCursor) {
     }
 
     public record TaskToolResponse(

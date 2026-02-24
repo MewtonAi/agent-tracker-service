@@ -7,7 +7,7 @@ import java.util.List;
 
 @MongoRepository
 public interface TaskMongoRepository extends CrudRepository<TaskDocument, String> {
-    List<TaskDocument> findByStatusOrderByUpdatedAtDesc(TaskStatus status);
+    List<TaskDocument> findByStatusOrderByUpdatedAtDescTaskIdAsc(TaskStatus status);
 
-    List<TaskDocument> findAllByOrderByUpdatedAtDesc();
+    List<TaskDocument> findAllByOrderByUpdatedAtDescTaskIdAsc();
 }

@@ -96,3 +96,11 @@ Close the remaining traceability parity gap by defining how caller-provided corr
 - Canonical release gate remains `./gradlew check` in CI (JDK 21).
 - New decision added: `ADR-011-mcp-correlation-id-source-policy.md` (interim MCP server-generated source policy).
 - Next coding focus: pagination contract first; correlation source parity second.
+
+## 7) 2026-02-24 developer run delta
+- Implemented REST+MCP pagination envelope parity: limit + cursor inputs, 
+extCursor output.
+- Implemented MCP caller-provided correlationId propagation with UUID fallback in tool error mapping.
+- Added/updated parity and registration/runtime tests for pagination + correlation schema fields.
+- Local validation blocker: Java 21 (JAVA_HOME) missing, so ./gradlew check and OpenAPI snapshot refresh could not be executed in this shell.
+

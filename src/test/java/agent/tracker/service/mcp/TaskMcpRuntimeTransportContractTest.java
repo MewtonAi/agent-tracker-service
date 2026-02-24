@@ -92,6 +92,9 @@ class TaskMcpRuntimeTransportContractTest {
         assertTrue(body.contains("updateTaskStatus"));
         assertTrue(body.contains("idempotencyKey"));
         assertTrue(body.contains("taskId"));
+        assertTrue(body.contains("correlationId"));
+        assertTrue(body.contains("limit"));
+        assertTrue(body.contains("cursor"));
     }
 
     private io.micronaut.http.HttpResponse<String> exchangeJsonRpc(String path, Map<String, Object> payload, Optional<String> sessionId) {

@@ -21,5 +21,8 @@ class OpenApiSnapshotContractTest {
         assertTrue(snapshot.contains("/v1/tasks/{taskId}/status:"));
         assertTrue(snapshot.contains("CONCURRENT_MODIFICATION"));
         assertTrue(snapshot.contains("IDEMPOTENCY_KEY_REUSE_MISMATCH"));
+        assertTrue(snapshot.contains("nextCursor"));
+        assertTrue(snapshot.contains("limit"));
+        assertTrue(snapshot.contains("cursor"));
     }
 }
