@@ -1,170 +1,166 @@
 # ATS Product + Architecture Backlog (REST + MCP + Micronaut + Mongo)
 
-Last updated: 2026-02-24 (PST, repo re-inspection + re-prioritization)
+Last updated: 2026-02-24 (PST, continuous product/architecture pass)
 Owner: Product/Architecture
 
-## Repo inspection snapshot (this run)
+## Repo state snapshot (this run)
 
-### Confirmed implemented
-- Shared task application services back REST + MCP (`TaskCommandService`, `TaskQueryService`).
-- Shared transport-agnostic input normalization exists and is used by both adapters (`application.contract.TaskInputNormalizer`).
-- MCP contract gates exist at registration and runtime handshake layers.
-- REST/MCP parity tests exist and are part of `check`.
-- Profile files exist (`application-local.yml`, `application-test.yml`, `application-prod.yml`) and matrix doc exists.
-- Mongo baseline exists: optimistic locking, idempotency uniqueness/hash mismatch, TTL index creation.
+### Confirmed in place
+- REST + MCP adapters already share application services (`TaskCommandService`, `TaskQueryService`).
+- Transport-agnostic request normalization exists (`application.contract.TaskInputNormalizer`).
+- MCP registration/runtime contract tests exist.
+- OpenAPI snapshot verification is wired and CI-gated.
+- Profile baseline exists (`local`, `test`, `prod`) with matrix doc.
+- Mongo baseline exists: optimistic locking, idempotency hash mismatch guard, TTL cleanup, startup index checks.
 
-### Highest-value remaining gaps
-1. API completeness decisions are not canonically locked (archive/delete/assignment/filter roadmap).
-2. Mongo index lifecycle is not yet auditable as a versioned manifest + explicit verification signal.
-3. Observability remains idempotency-centric; missing cross-transport RED baseline and parity-drift signal.
-4. Error-catalog governance is still primarily test assertions, not a single generated source shared by REST/OpenAPI/MCP.
-5. Developer UX for local verification is fragmented (no single profile-aware guardrail task).
-
----
-
-## Prioritized backlog (small, execution-ready)
-
-## P0 (do now)
-
-### ATS-PA-02 — ADR: API completeness boundary (archive/delete + assignment + list filter scope)
-**Why now**: prevents scope churn and contract churn before adding new endpoints/tools.
-
-**Implementation slices (<= 1 day each)**
-- 02a: Draft decision options and recommendation with compatibility analysis.
-- 02b: Final ADR with parity matrix (REST route ↔ MCP tool) and migration posture.
-- 02c: Propagate canonical references into README + roadmap + backlog.
-
-**Acceptance criteria**
-- ADR explicitly decides:
-  - hard delete vs archive/cancel semantics,
-  - assignment/unassignment semantics,
-  - v1.1 list filter scope (`assignee`, `priority`, `type`) and non-goals.
-- Decision documents request/response compatibility posture as additive/non-breaking for v1.x.
-- ADR includes parity mapping table for each accepted capability across REST + MCP.
-- Follow-up implementation work is split into concrete tickets each scoped to <=1 dev day.
-
-**Architecture notes**
-- Keep task-first bounded context; no project-routable APIs introduced.
-- Prefer additive contracts; no field removals/renames in v1.x.
-- Keep domain language canonical (`CANCELED` remains lifecycle state; avoid introducing duplicate archival state unless intentionally modeled).
-
-**Dependencies**: none.
+### Remaining strategic gaps
+1. API boundary for next task capabilities (archive/delete/assignment/filter set) is not yet locked as a canonical decision artifact.
+2. MCP tool contract governance is mostly test-driven; examples/compatibility docs for external consumers are thin.
+3. Micronaut modular boundaries and profile safety checks are not enforced by dedicated architectural tests.
+4. Mongo change-management posture needs explicit migration/runbook contract for destructive index/schema operations.
+5. Observability/test strategy still under-specifies cross-transport SLO signals and local developer verification path.
 
 ---
 
-### ATS-PA-04 — Mongo index/migration manifest + startup verification contract
-**Why now**: turns current implicit startup behavior into auditable release evidence.
+## Prioritized backlog
 
-**Implementation slices (<= 1 day each)**
-- 04a: Add `docs/mongo-index-manifest.md` v1 with index purpose/ownership/change policy.
-- 04b: Emit structured startup logs for index create/exist outcomes.
-- 04c: Add integration assertion for required index set in mongo-backed tests.
-- 04d: Add release-evidence checklist line item + reference.
+## P0 (execute now)
+
+### ATS-PA-24 — ADR: v1.1 API completeness boundary (archive/delete, assignment, list-filter scope)
+**Problem**: team can add endpoints/tools inconsistently unless capability scope is explicitly decided first.
+
+**Scope slices (<=1 day each)**
+- 24a: Draft options + recommendation (hard delete vs archive/cancel, assignment semantics, list-filter set).
+- 24b: Publish ADR with REST route ↔ MCP tool parity table and compatibility notes.
+- 24c: Cascade references in README, architecture doc, roadmap, and backlog.
 
 **Acceptance criteria**
-- Manifest lists required indexes including key order, uniqueness/TTL options, owning component, and rationale.
-- Startup emits deterministic structured events for each required index with status `created|already_exists`.
-- Automated test fails when required index spec diverges from manifest/initializer contract.
-- Release evidence artifact references and records index verification signal.
+- ADR explicitly decides: delete/archive posture, assignment/unassignment semantics, and allowed v1.1 filters (`assignee`, `priority`, `type`).
+- ADR defines change policy as additive/non-breaking for v1.x, with explicit out-of-scope items.
+- Follow-on implementation tickets are split into <=1 day tasks and linked from ADR.
 
 **Architecture notes**
-- Non-destructive index creation only at startup.
-- Destructive index changes (drop/rename/change uniqueness) require explicit ADR + manual migration runbook.
-- Keep index naming deterministic to support assertion + operations runbooks.
-
-**Dependencies**: profile determinism already available; no hard blockers.
+- Maintain task-first bounded context; keep project APIs deferred/non-routable.
+- Preserve canonical lifecycle semantics (`CANCELED` stays authoritative terminal state unless superseded by ADR).
 
 ---
 
-### ATS-PA-05 — Cross-transport observability baseline (REST + MCP RED + parity mismatch)
-**Why now**: enables objective reliability tracking beyond idempotency internals.
+### ATS-PA-25 — MCP contract pack: tool schemas, error mapping, and consumer examples
+**Problem**: MCP runtime contracts are tested, but consumer-facing contract readability/reuse is weak.
 
-**Implementation slices (<= 1 day each)**
-- 05a: Add shared telemetry seam for transport/operation/outcome counters and duration timer.
-- 05b: Instrument REST controller paths and MCP tool entrypoints.
-- 05c: Add parity mismatch counter for contract-level mapping mismatches.
-- 05d: Extend `OBSERVABILITY.md` with metric dictionary and starter alerts.
+**Scope slices (<=1 day each)**
+- 25a: Add `docs/mcp-contract-pack.md` with tool inputs/outputs and error-code mapping table.
+- 25b: Add CI-validated JSON examples for success + canonical failures (validation/conflict/not found/idempotency mismatch).
+- 25c: Add drift check ensuring docs examples remain aligned with runtime tool schemas.
 
 **Acceptance criteria**
-- Metrics emitted for both transports with dimensions `{transport,operation,outcome}`.
-- Bounded-cardinality rule enforced (no task/idempotency/correlation identifiers in labels).
-- At least one automated test asserts meter registration and tag set.
-- Documentation includes metric names, semantics, and baseline alert suggestions.
+- Each shipped MCP task tool has at least 1 valid request/response example and 1 failure example.
+- Error code mapping is explicitly parity-aligned with REST problem `code` vocabulary.
+- CI fails if schema/example mismatch is introduced.
 
 **Architecture notes**
-- Keep instrumentation centralized (application/telemetry seam), not duplicated in adapters.
-- Reuse canonical error code vocabulary for `outcome` where applicable.
-
-**Dependencies**: none.
+- Keep one canonical error-code vocabulary shared across adapters.
+- Treat examples as contract artifacts, not informal docs.
 
 ---
 
-### ATS-PA-11 — Shared correlation-id normalization policy component (REST + MCP)
-**Why now**: MCP has inline normalization logic; centralizing avoids future drift with REST policy ADRs.
+### ATS-PA-26 — Micronaut architecture guardrails (module boundaries + profile safety)
+**Problem**: package boundaries and environment profile expectations rely on convention more than enforcement.
 
-**Implementation slices (<= 1 day each)**
-- 11a: Move UUID validation/fallback logic from `TaskMcpTools` into shared contract component.
-- 11b: Apply component in MCP path and validate consistency with REST correlation behavior.
-- 11c: Add parity/error tests for malformed/blank correlation IDs.
+**Scope slices (<=1 day each)**
+- 26a: Add architecture tests asserting adapter->application->domain dependency direction.
+- 26b: Add profile safety tests for critical keys (`task.store`, management endpoint posture, Mongo URI expectation).
+- 26c: Document allowed dependency rules in `ARCHITECTURE.md` and config matrix cross-reference.
 
 **Acceptance criteria**
-- No inline correlation-id normalization logic remains in MCP adapter.
-- Shared component enforces canonical UUID policy and fallback generation.
-- REST/MCP documentation reflects a single normalization contract source.
+- Automated tests fail on forbidden dependencies (e.g., adapter directly depending on infrastructure internals).
+- Profile tests assert expected defaults for `local/test/prod` and fail on accidental drift.
+- Architecture doc includes explicit dependency-direction policy and profile invariants.
 
 **Architecture notes**
-- Keep transport-specific extraction at adapter edge; normalization in shared contract layer.
-- Preserve existing external behavior unless ADR update explicitly approves change.
+- Domain and application contracts remain transport/storage-agnostic.
+- Profiles are release-safety controls, not just convenience defaults.
 
-**Dependencies**: none.
+---
+
+### ATS-PA-27 — Mongo migration + reliability contract (index/schema evolution runbook)
+**Problem**: startup index creation is good baseline, but destructive changes and recovery playbooks are not codified.
+
+**Scope slices (<=1 day each)**
+- 27a: Add migration runbook doc for destructive index/schema changes (drop/rename/uniqueness changes).
+- 27b: Add reliability test pack for duplicate-key races + transient write/retry behavior.
+- 27c: Add release-evidence checklist items for migration risk sign-off.
+
+**Acceptance criteria**
+- Runbook defines pre-checks, backup/rollback, and post-verify steps for destructive changes.
+- Tests cover duplicate-key contention and transient failure retry contract deterministically.
+- Release evidence includes explicit migration-risk section when Mongo contract changes ship.
+
+**Architecture notes**
+- Keep startup behavior non-destructive; destructive operations require planned/manual migration path.
+- Preserve deterministic index names/specs for operational auditability.
+
+---
+
+### ATS-PA-28 — Cross-transport RED + parity-drift observability baseline
+**Problem**: current telemetry is strong for idempotency but not yet complete for transport-level reliability and parity health.
+
+**Scope slices (<=1 day each)**
+- 28a: Introduce shared telemetry seam for request rate/error/duration by `{transport,operation,outcome}`.
+- 28b: Instrument REST endpoints + MCP tool handlers using shared seam.
+- 28c: Add parity-drift counter for mapping mismatches and extend `OBSERVABILITY.md` with starter alerts.
+
+**Acceptance criteria**
+- Metrics emitted for REST and MCP with bounded-cardinality tags only.
+- At least one automated test asserts meter names + required tags.
+- Observability docs define metric semantics and suggested initial alert thresholds.
+
+**Architecture notes**
+- Centralize instrumentation in shared application seam; avoid duplicate adapter-specific logic.
+- Reuse canonical outcome/error vocabulary to keep dashboards comparable.
 
 ---
 
 ## P1 (next)
 
-### ATS-PA-07 — Unified error catalog source (generate/check OpenAPI + MCP mapping)
-- Replace duplicated literals with single catalog artifact + generation/check path.
-- AC: OpenAPI + exception mapping + MCP mapping derive from one source; CI fails on divergence.
+### ATS-PA-29 — Unified error-catalog source generation
+- Generate REST problem mapping + MCP mapping + OpenAPI error components from one source.
+- AC: CI fails on divergence between generated artifacts and runtime mappings.
 
-### ATS-PA-08 — Mongo resilience pack (race/retry/failure modes)
-- Add tests for duplicate-key races, transient write failures, and stale replay handling.
-- AC: deterministic test suite with documented retry/backoff contract.
+### ATS-PA-30 — List-query v1.1 delivery (after ATS-PA-24)
+- Implement only ADR-approved filter/sort scope and update parity/openapi tests together.
+- AC: OpenAPI + MCP schemas + parity tests stay synchronized.
 
-### ATS-PA-06 — List query contract v1.1 implementation (post ATS-PA-02 ADR)
-- Implement selected filters/sort constraints from ATS-PA-02 only.
-- AC: OpenAPI + MCP schema + parity tests updated together.
+### ATS-PA-31 — Local DX verification command (`verifyLocal`)
+- Add one-command profile-aware local verification wrapper and doc quickstart.
+- AC: fresh clone can run documented command with deterministic pass/fail semantics.
 
-### ATS-PA-09 — MCP consumer examples pack
-- Provide copy-paste JSON examples for success and canonical failures.
-- AC: examples validated in CI smoke or contract tests.
-
-### ATS-PA-10 — DX local verification guardrails
-- Add `verifyLocal` aggregate task (profile-aware) and one-command quickstart path.
-- AC: documented command and deterministic pass/fail behavior on fresh clone.
+### ATS-PA-32 — Correlation-id normalization unification component
+- Move any remaining adapter-inline normalization to shared contract component.
+- AC: no transport drift in malformed/blank correlation-id behavior.
 
 ---
 
 ## Recommended execution order
-1. ATS-PA-02
-2. ATS-PA-04
-3. ATS-PA-05
-4. ATS-PA-11
-5. ATS-PA-07
-6. ATS-PA-08
-7. ATS-PA-06
+1. ATS-PA-24 (scope lock first)
+2. ATS-PA-26 (architecture/profile guardrails)
+3. ATS-PA-25 (MCP contract pack)
+4. ATS-PA-27 (Mongo migration/reliability)
+5. ATS-PA-28 (observability baseline)
+6. ATS-PA-29
+7. ATS-PA-30
+8. ATS-PA-31
+9. ATS-PA-32
 
 ---
 
 ## Definition of Done (all ATS-PA tickets)
-- Tests added/updated and passing in `./gradlew check` (or explicitly documented CI fallback with rationale).
-- No REST/MCP contract divergence introduced (parity/contract suites green).
-- Relevant docs updated (README/ARCHITECTURE/OBSERVABILITY/release evidence/backlog as applicable).
-- Ticket artifact contains rollback/mitigation note for behavior, schema, or config changes.
-- Ownership + evidence source (local-java21 or ci-java21) recorded for release-significant work.
-
----
+- `./gradlew check` passes (or CI fallback explicitly documented with rationale + source label).
+- No REST/MCP contract drift introduced without explicit ADR-approved change.
+- Docs updated in same change set for any contract/profile/schema/observability behavior change.
+- Release-significant changes include evidence-source declaration (`local-java21` or `ci-java21`) and rollback note.
 
 ## Next top 3 developer tickets
-1. **ATS-PA-02** — Lock API completeness boundary via ADR before adding surfaces.
-2. **ATS-PA-04** — Mongo index manifest + startup verification + integration assertion.
-3. **ATS-PA-05** — Cross-transport RED observability baseline and parity mismatch signal.
+1. **ATS-PA-24** — Lock API completeness boundary via ADR before new surface area.
+2. **ATS-PA-26** — Add architecture + profile guardrail tests to prevent silent drift.
+3. **ATS-PA-25** — Publish MCP contract pack with CI-validated examples and parity mapping.
