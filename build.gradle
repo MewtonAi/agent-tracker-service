@@ -17,11 +17,13 @@ dependencies {
     annotationProcessor("io.micronaut.data:micronaut-data-document-processor")
     annotationProcessor("io.micronaut:micronaut-http-validation")
     annotationProcessor("io.micronaut.serde:micronaut-serde-processor")
+    annotationProcessor("io.micronaut.openapi:micronaut-openapi")
     implementation("io.micronaut.data:micronaut-data-mongodb")
     implementation("io.micronaut.mcp:micronaut-mcp-server-java-sdk")
     implementation("io.micronaut.serde:micronaut-serde-jackson")
     compileOnly("io.micronaut:micronaut-http-client")
     compileOnly("org.projectlombok:lombok")
+    compileOnly("io.swagger.core.v3:swagger-annotations")
     runtimeOnly("ch.qos.logback:logback-classic")
     runtimeOnly("org.mongodb:mongodb-driver-sync")
     runtimeOnly("org.yaml:snakeyaml")
@@ -67,4 +69,56 @@ tasks.named("dockerfileNative") {
     jdkVersion = "21"
 }
 
+def generatedOpenApiFileProvider = providers.provider {
+    fileTree("$buildDir/classes/java/main/META-INF/swagger") {
+        include("*.yml", "*.yaml")
+    }.files.sort().find { it.isFile() }
+}
 
+def openApiSnapshotFile = layout.projectDirectory.file("openapi/openapi.yaml")
+
+tasks.register("updateOpenApiSnapshot") {
+    group = "verification"
+    description = "Refreshes committed openapi/openapi.yaml from generated Micronaut OpenAPI output"
+    dependsOn(tasks.named("classes"))
+    outputs.file(openApiSnapshotFile)
+    doLast {
+        def generated = generatedOpenApiFileProvider.get()
+        if (generated == null) {
+            throw new GradleException("No generated OpenAPI spec found in build/classes/java/main/META-INF/swagger")
+        }
+        copy {
+            from(generated)
+            into(openApiSnapshotFile.asFile.parentFile)
+            rename { "openapi.yaml" }
+        }
+    }
+}
+
+tasks.register("verifyOpenApiSnapshot") {
+    group = "verification"
+    description = "Baseline OpenAPI snapshot gate for v1 routes/error-codes"
+    inputs.file(openApiSnapshotFile)
+    doLast {
+        def snapshot = openApiSnapshotFile.asFile
+        if (!snapshot.exists()) {
+            throw new GradleException("Missing ${snapshot}. Run ./gradlew updateOpenApiSnapshot and commit the result.")
+        }
+        def text = snapshot.getText("UTF-8")
+        [
+            "/v1/tasks:",
+            "/v1/tasks/{taskId}:",
+            "/v1/tasks/{taskId}/status:",
+            "CONCURRENT_MODIFICATION",
+            "IDEMPOTENCY_KEY_REUSE_MISMATCH"
+        ].each { marker ->
+            if (!text.contains(marker)) {
+                throw new GradleException("OpenAPI snapshot missing required marker '${marker}'.")
+            }
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn(tasks.named("verifyOpenApiSnapshot"))
+}

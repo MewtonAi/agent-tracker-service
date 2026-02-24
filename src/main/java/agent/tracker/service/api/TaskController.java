@@ -17,12 +17,15 @@ import io.micronaut.http.annotation.Patch;
 import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.QueryValue;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+@Tag(name = "Tasks")
 @Controller("/v1/tasks")
 public class TaskController {
 
@@ -34,6 +37,7 @@ public class TaskController {
         this.queryService = queryService;
     }
 
+    @Operation(summary = "Create task")
     @Post
     public TaskResponse create(
         @Header("Idempotency-Key") @NotBlank String idempotencyKey,
@@ -50,17 +54,20 @@ public class TaskController {
         return toResponse(task);
     }
 
+    @Operation(summary = "Get task by id")
     @Get("/{taskId}")
     public TaskResponse getById(@PathVariable @NotBlank String taskId) {
         return toResponse(queryService.getTaskById(taskId));
     }
 
+    @Operation(summary = "List tasks")
     @Get
     public List<TaskResponse> list(@QueryValue(defaultValue = "") String status) {
         TaskStatus filter = parseStatusFilter(status);
         return queryService.listTasks(filter).stream().map(TaskController::toResponse).toList();
     }
 
+    @Operation(summary = "Update task status")
     @Patch("/{taskId}/status")
     public TaskResponse updateStatus(
         @PathVariable String taskId,

@@ -27,9 +27,8 @@ Owner: Product/Architecture
 - ✅ Idempotency replay observability event markers standardized (`idempotency.first_write`, `idempotency.replay_hit`, `idempotency.mismatch_reject`) with operation dimension.
 
 ### Not shipped / not release-safe yet
-- ❌ MCP runtime transport-wire verification in CI/local runbook (discoverability + schema).
-- ❌ OpenAPI generation/snapshot/diff gate in CI.
-- 🟡 Parity tests exist but are not yet an explicit CI release gate.
+- 🟡 MCP runtime verification now covers Micronaut runtime boot + tool bean/method surface (`TaskMcpRuntimeTransportContractTest`), but explicit wire-level MCP `tools/list` handshake verification is still pending.
+- 🟡 OpenAPI baseline snapshot + CI gate are now present, but strict generated-vs-checked-in drift enforcement still needs final hardening in toolchain-ready environments.
 
 ---
 
@@ -39,11 +38,11 @@ Owner: Product/Architecture
 
 ### EPIC P0-A: MCP delivery + semantic parity (highest impact)
 1. ✅ **TKT-P0-A1 — Implement 4 MCP tools via shared services**
-2. 🟡 **TKT-P0-A2 — REST/MCP parity scenario suite in CI** (tests implemented; gate wiring pending)
-3. 🟡 **TKT-P0-A3 — MCP runtime registration/schema verification** (code contract tests done; runtime smoke/gate pending)
+2. ✅ **TKT-P0-A2 — REST/MCP parity scenario suite in CI** (GitHub Actions `check` gate now wired)
+3. 🟡 **TKT-P0-A3 — MCP runtime registration/schema verification** (runtime context checks added; wire-level handshake gate pending)
 
 ### EPIC P0-B: Contract governance
-4. ❌ **TKT-P0-B1 — OpenAPI generation + snapshot + drift gate**
+4. 🟡 **TKT-P0-B1 — OpenAPI generation + snapshot + drift gate** (baseline snapshot + verify/update tasks + CI integration added; strict diff hardening pending)
 5. ✅ **TKT-P0-B2 — Error catalog lock tests (`code` stability)**
 
 ### EPIC P0-C: Idempotency operations readiness
@@ -121,7 +120,7 @@ Owner: Product/Architecture
 - Deferred project DTOs in API package can still confuse clients about supported v1 surface.
 
 ## 6) Developer handoff notes for next implementer
-- **First unblock:** wire parity tests into CI as hard gate (`TKT-P0-A2`).
-- **Then verify MCP runtime:** add smoke script/runbook + CI assertion for tool inventory/schema (`TKT-P0-A3`).
-- **Then lock contract:** implement OpenAPI snapshot/diff governance (`TKT-P0-B1`).
+- ✅ Parity + contract checks now run via GitHub Actions (`./gradlew check`).
+- **Next unblock:** extend MCP runtime check from context-level assertions to explicit transport-wire `tools/list` handshake (`TKT-P0-A3`).
+- **Next contract hardening:** tighten OpenAPI drift check to strict generated-vs-checked-in diff (`TKT-P0-B1`).
 - Keep ADR-007 posture intact (v2-only idempotency semantics) unless superseded by a new ADR.

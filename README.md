@@ -20,8 +20,8 @@ Current implementation snapshot:
 - Mongo idempotency TTL retention is configurable via `idempotency.ttl-hours` / `IDEMPOTENCY_TTL_HOURS` (default 48h)
 
 ## Next priorities
-1. CI-enforced REST/MCP parity gate (`TaskRestMcpParityTest`) + MCP runtime registration/schema verification
-2. OpenAPI generation/check-in + CI contract drift gate
+1. MCP runtime wire-level `tools/list` smoke check against live HTTP transport
+2. Tighten OpenAPI drift gate from baseline snapshot checks to generated-vs-checked-in comparison
 3. Post-MVP: promote idempotency observability markers to metrics dashboards/alerts
 
 Migration posture note: idempotency semantics are v2-only in this repo lineage (see ADR-007).
@@ -29,7 +29,16 @@ Migration posture note: idempotency semantics are v2-only in this repo lineage (
 ## Local validation
 Run:
 ```bash
-./gradlew test
+./gradlew check
 ```
 
-> In this run, local test execution could not be completed in the environment because `JAVA_HOME`/`java` was unavailable.
+OpenAPI contract workflow:
+```bash
+./gradlew updateOpenApiSnapshot
+./gradlew verifyOpenApiSnapshot
+```
+
+MCP runtime transport/registration smoke:
+```bash
+./gradlew test --tests "*TaskMcpRuntimeTransportContractTest"
+```
