@@ -89,6 +89,7 @@ class ReleaseReadinessDocumentationContractTest {
         assertTrue(prTemplate.contains("Canonical ADR set used"));
         assertTrue(prTemplate.contains("ADR-018"));
         assertTrue(prTemplate.contains("ADR-019"));
+        assertTrue(prTemplate.contains("ADR-020"));
         assertTrue(prTemplate.contains("<=24h"));
     }
 
