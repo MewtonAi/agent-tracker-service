@@ -1,14 +1,14 @@
 # Developer Handoff — REST + MCP Post-MVP Hardening
 
-Last updated: 2026-02-24 (PST, late-night refresh)
+Last updated: 2026-02-24 (PST, post-inspection refresh)
 
 ## What changed in this product/architecture pass
-- Performed fresh repo inspection across code, docs, tests, and CI wiring.
-- Re-prioritized roadmap around the highest-impact post-MVP gap: **cross-transport correlation ID parity**.
+- Re-inspected latest code/docs/tests/CI state for REST + MCP readiness.
+- Re-ranked next slices: **pagination contract first**, then MCP caller-correlation propagation semantics.
 - Added decision record:
-  - `ADR-010-cross-transport-correlation-id-contract.md`
-  - Locks requirement that both REST and MCP failures expose correlation IDs.
-- Refreshed planning docs (`PRODUCT_OWNER_NEXT.md`, `ARCHITECTURE.md`) to reflect new execution order and acceptance criteria.
+  - `ADR-011-mcp-correlation-id-source-policy.md`
+  - Interim policy: MCP guarantees non-empty `correlationId` on failures, using server-generated source until explicit propagation precedence is designed.
+- Updated planning/architecture docs to align with current implementation reality.
 
 ## Current engineering baseline (verified)
 - REST task endpoints stable for create/get/list/update-status.
@@ -19,28 +19,28 @@ Last updated: 2026-02-24 (PST, late-night refresh)
   - MCP registration + runtime transport handshake/discoverability
   - OpenAPI strict snapshot drift
   - Error-code catalog lock
-- Idempotency counters and alert-threshold guidance are documented and test-covered.
+- Idempotency counters and threshold guidance are documented and test-covered.
+
+## Environment caveat from this pass
+- Local `./gradlew check` could not be run here because `JAVA_HOME` is not configured.
+- No runtime code was changed in this pass; updates are docs/ADR/planning only.
 
 ## Recommended next coding slice
-### TKT-P1-O12 — Cross-transport correlation ID propagation contract
+### TKT-P1-A13 — Task list cursor pagination contract (REST + MCP parity)
 Definition of done:
-- MCP tool error payload includes `correlationId` (non-empty).
-- REST correlation behavior remains unchanged and guarded.
-- Contract/parity tests cover caller-provided + generated fallback IDs across representative errors:
-  - `TASK_NOT_FOUND`
-  - `CONCURRENT_MODIFICATION`
-  - `IDEMPOTENCY_KEY_REUSE_MISMATCH`
-- Docs updated where external error contract is described.
+- REST list route supports bounded `limit` + `cursor` and returns deterministic `nextCursor`.
+- MCP `listTasks` mirrors equivalent pagination semantics.
+- Parity tests cover multi-page equivalence and terminal-page behavior.
+- OpenAPI snapshot + MCP tool schema/runtime tests updated in same slice.
 
-## Suggested implementation notes
-- Keep stable error `code` values unchanged while extending MCP error shape.
-- Prefer one correlation token generation strategy reusable across adapters.
-- Add tests first (or alongside implementation) to avoid contract drift.
+## Follow-on slice
+### TKT-P1-O12b — MCP caller-supplied correlation propagation semantics
+Definition of done:
+- Explicit source precedence selected and documented (supersede ADR-011).
+- MCP reuses caller correlation token when present via chosen source; generates fallback otherwise.
+- Error-path contract tests cover propagation + fallback.
 
-## Next slices after O12
-1. `TKT-P1-A13` cursor pagination parity contract.
-2. `TKT-P1-A14` internalize deferred project DTO/contracts.
-
-## Validation note
-- This pass focused on product/architecture artifacts; no runtime code changes were made.
-- Local execution of `./gradlew check` was not rerun in this docs-only pass.
+## Implementation notes
+- Preserve stable error `code` values while evolving payload shape/metadata behavior.
+- Keep contract tests as first-class gate to avoid transport drift.
+- Maintain backward compatibility for list callers that omit pagination params.

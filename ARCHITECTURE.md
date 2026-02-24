@@ -1,6 +1,6 @@
 # Agent Tracker Service Architecture (v1)
 
-Last updated: 2026-02-24 (PST, late-night refresh)
+Last updated: 2026-02-24 (PST, post-inspection refresh)
 
 ## Purpose
 Task-first system of record for agent work tracking, exposed via REST and MCP with shared business semantics.
@@ -50,7 +50,8 @@ Current mapped codes:
 - `INTERNAL_ERROR` (500)
 
 `X-Correlation-Id` is echoed from request or generated when missing.
-Cross-transport posture (ADR-010): MCP tool failures must expose an equivalent `correlationId` token alongside stable `code`.
+Cross-transport posture (ADR-010/ADR-011): MCP tool failures must expose an equivalent `correlationId` token alongside stable `code`.
+Interim source policy is server-generated fallback only for MCP (caller-token propagation is deferred until explicit transport metadata precedence is standardized).
 
 ## Contract governance
 - `verifyOpenApiSnapshot` enforces strict generated-vs-checked-in equality for `openapi/openapi.yaml`.
@@ -71,6 +72,6 @@ Implemented:
 - idempotency observability markers emitted (`idempotency.first_write`, `idempotency.replay_hit`, `idempotency.mismatch_reject`) with operation dimension
 
 ## Active architectural focus (post-MVP)
-1. Implement cross-transport correlation ID propagation contract tests and MCP error payload shaping (ADR-010).
-2. Add cursor pagination contract for list endpoints/tools while preserving current semantics.
-3. Remove or internalize deferred project DTO/contracts to reduce API surface ambiguity.
+1. Add cursor pagination contract for list endpoints/tools while preserving current semantics.
+2. Define MCP caller-supplied correlation propagation semantics (superseding ADR-011 interim policy) and lock with parity tests.
+3. Continue API surface hygiene so deferred project artifacts remain internal-only and non-routable.
