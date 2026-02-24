@@ -4,20 +4,19 @@ import agent.tracker.service.domain.exception.NotFoundException;
 import agent.tracker.service.domain.model.Task;
 import agent.tracker.service.domain.model.TaskStatus;
 import jakarta.inject.Singleton;
-import java.util.Comparator;
 import java.util.List;
 
 @Singleton
 public class TaskQueryService {
 
-    private final InMemoryTaskStore store;
+    private final TaskStore store;
 
-    public TaskQueryService(InMemoryTaskStore store) {
+    public TaskQueryService(TaskStore store) {
         this.store = store;
     }
 
     public Task getTaskById(String taskId) {
-        Task task = store.tasks().get(taskId);
+        Task task = store.findTaskById(taskId);
         if (task == null) {
             throw new NotFoundException("Task not found: " + taskId);
         }
@@ -25,9 +24,6 @@ public class TaskQueryService {
     }
 
     public List<Task> listTasks(TaskStatus status) {
-        return store.tasks().values().stream()
-            .filter(task -> status == null || status == task.getStatus())
-            .sorted(Comparator.comparing((Task t) -> t.getAudit().getUpdatedAt()).reversed())
-            .toList();
+        return store.listTasks(status);
     }
 }

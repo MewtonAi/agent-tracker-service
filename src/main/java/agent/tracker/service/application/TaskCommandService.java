@@ -16,15 +16,15 @@ import java.util.UUID;
 @Singleton
 public class TaskCommandService {
 
-    private final InMemoryTaskStore store;
+    private final TaskStore store;
 
-    public TaskCommandService(InMemoryTaskStore store) {
+    public TaskCommandService(TaskStore store) {
         this.store = store;
     }
 
     public Task createTask(CreateTaskCommand command) {
         String idempotencyKey = requireText(command.idempotencyKey(), "idempotencyKey");
-        Task existing = store.createByIdempotency().get(idempotencyKey);
+        Task existing = store.findCreateReplay(idempotencyKey);
         if (existing != null) {
             return existing;
         }
@@ -48,19 +48,19 @@ public class TaskCommandService {
                 .build())
             .build();
 
-        store.tasks().put(taskId, task);
-        store.createByIdempotency().put(idempotencyKey, task);
-        return task;
+        Task saved = store.save(task);
+        store.saveCreateReplay(idempotencyKey, saved);
+        return saved;
     }
 
     public Task updateTaskStatus(UpdateTaskStatusCommand command) {
         String idempotencyKey = requireText(command.idempotencyKey(), "idempotencyKey");
-        Task existingReplay = store.statusByIdempotency().get(idempotencyKey);
+        Task existingReplay = store.findStatusReplay(idempotencyKey);
         if (existingReplay != null) {
             return existingReplay;
         }
 
-        Task existing = store.tasks().get(command.taskId());
+        Task existing = store.findTaskById(command.taskId());
         if (existing == null) {
             throw new NotFoundException("Task not found: " + command.taskId());
         }
@@ -71,9 +71,9 @@ public class TaskCommandService {
             .audit(existing.getAudit().withUpdatedAt(Instant.now()).withUpdatedBy(coalesce(command.updatedBy(), "system")))
             .build();
 
-        store.tasks().put(updated.getTaskId(), updated);
-        store.statusByIdempotency().put(idempotencyKey, updated);
-        return updated;
+        Task saved = store.save(updated);
+        store.saveStatusReplay(idempotencyKey, saved);
+        return saved;
     }
 
     private static String requireText(String value, String field) {

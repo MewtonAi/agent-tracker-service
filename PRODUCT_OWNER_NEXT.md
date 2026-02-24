@@ -22,9 +22,9 @@ Owner: Product/Architecture
 - ✅ In-memory idempotency replay behavior exists for create/status-update mutations.
 
 ### What is not shipped yet (MVP blockers)
-- ❌ Durable Mongo persistence adapter
+- 🟡 Durable Mongo persistence adapter (seam + adapter/repositories implemented; concurrency behavior still needs verification hardening)
 - ❌ Optimistic locking with deterministic conflict semantics on concurrent writes
-- ❌ Durable idempotency record store (currently in-memory only)
+- 🟡 Durable idempotency record store (Mongo-backed records implemented, duplicate-key/error mapping needs hardening)
 - ❌ MCP tool surface (`create_task`, `get_task`, `list_tasks`, `update_task_status`)
 - ❌ Automated REST/MCP parity suite in CI
 - ❌ OpenAPI generation + contract lock pipeline
