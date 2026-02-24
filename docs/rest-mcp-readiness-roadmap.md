@@ -13,6 +13,7 @@ Owner: Product/Architecture
 - Evidence provenance + freshness: **ADR-019**
 - Documentation contract coverage + policy-sync rule: **ADR-020**
 - Java21 preflight + verification provenance ladder: **ADR-021**
+- Minimum release test-signal declaration set: **ADR-022**
 
 ## Sprint-ready slices
 

@@ -2,7 +2,7 @@
 - 
 
 ## Release Evidence Bundle (required for release candidates)
-Source of truth: `docs/release-evidence.md` (ADR-016 / ADR-017 / ADR-019 / ADR-020 / ADR-021)
+Source of truth: `docs/release-evidence.md` (ADR-016 / ADR-017 / ADR-019 / ADR-020 / ADR-021 / ADR-022)
 
 ### 1) CI gate evidence
 - [ ] `./gradlew check` passed on JDK 21
@@ -23,23 +23,29 @@ Source of truth: `docs/release-evidence.md` (ADR-016 / ADR-017 / ADR-019 / ADR-0
 - [ ] No selective test bypass used for release branch
 - [ ] Coverage notes:
 
-### 4) Canonical ADR evidence
-- Canonical ADR set used: ADR-012/013/014/015/016/017/018/019/020/021
+### 4) Minimum release test-signal set (ADR-022)
+- [ ] `TaskRestMcpParityTest` status recorded
+- [ ] `TaskMcpRuntimeTransportContractTest` status recorded
+- [ ] `OpenApiSnapshotContractTest` status recorded
+- [ ] `ReleaseReadinessDocumentationContractTest` status recorded
+- [ ] Signal source reference (CI URL or local Java21 log):
+
+### 5) Canonical ADR evidence
+- Canonical ADR set used: ADR-012/013/014/015/016/017/018/019/020/021/022
 - [ ] Active policy references limited to canonical ADR set above
 - [ ] No superseded ADR cited as active contract
 
-### 5) Provenance + freshness checks
+### 6) Provenance + freshness checks
 - [ ] Evidence SHA matches PR head SHA
 - [ ] Verification evidence is <=24h old at GO decision time
 - [ ] If older than 24h, verification rerun or explicit NO-GO/exception owner recorded
 
-### 6) Environment constraints
+### 7) Environment constraints
 - [ ] Local/runtime limitation documented (or mark none)
 - [ ] Evidence source declared if constrained (CI or Java-enabled workstation)
 
-### 7) Go/No-Go statement
+### 8) Go/No-Go statement
 - Decision: GO / NO-GO
 - Decision owner:
 - Timestamp (PST):
 - Risk notes / follow-ups:
-

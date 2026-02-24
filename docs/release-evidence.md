@@ -1,4 +1,4 @@
-# Release Evidence Bundle (ADR-016 / ADR-017 / ADR-019 / ADR-020 / ADR-021)
+# Release Evidence Bundle (ADR-016 / ADR-017 / ADR-019 / ADR-020 / ADR-021 / ADR-022)
 
 Use this checklist for any PR that claims REST + MCP release readiness.
 
@@ -21,7 +21,14 @@ Use this checklist for any PR that claims REST + MCP release readiness.
 - [ ] Parity tests were included via default `check` gate (no selective bypass)
 - [ ] Representative parity coverage noted (for example: create/get/list/update-status, idempotency mismatch, correlation failures)
 
-## 4) Canonical ADR references (required)
+## 4) Minimum release test-signal set (required, ADR-022)
+- [ ] `TaskRestMcpParityTest` status recorded
+- [ ] `TaskMcpRuntimeTransportContractTest` status recorded
+- [ ] `OpenApiSnapshotContractTest` status recorded
+- [ ] `ReleaseReadinessDocumentationContractTest` status recorded
+- [ ] Signal source reference recorded (CI run URL or local Java21 log)
+
+## 5) Canonical ADR references (required)
 Reference active contracts only:
 - [ ] `ADR-012-mcp-correlation-id-canonicalization-policy.md`
 - [ ] `ADR-013-task-list-pagination-ordering-contract.md`
@@ -33,13 +40,14 @@ Reference active contracts only:
 - [ ] `ADR-019-release-evidence-provenance-and-freshness-policy.md`
 - [ ] `ADR-020-release-contract-documentation-coverage-policy.md`
 - [ ] `ADR-021-java21-toolchain-readiness-and-verification-provenance-ladder.md`
+- [ ] `ADR-022-release-evidence-minimum-test-signal-set-policy.md`
 
-## 5) Environment constraints
+## 6) Environment constraints
 - [ ] Local/runtime limitation recorded (or mark none)
 - [ ] If constrained, CI fallback source is declared and linked
 - [ ] ADR-021 provenance-ladder path is explicitly stated
 
-## 6) Handoff + decision consistency
+## 7) Handoff + decision consistency
 - [ ] Handoff note includes the same evidence headings and outcomes
 - [ ] Any unresolved risk/blocker is explicitly listed
 - [ ] Explicit release decision captured: `GO` or `NO-GO` (owner + timestamp)

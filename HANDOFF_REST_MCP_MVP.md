@@ -1,10 +1,11 @@
 # Developer Handoff — REST + MCP Readiness
 
-Last updated: 2026-02-24 (PST, OpenAPI pagination-marker hardening + ADR-021 planning refresh)
+Last updated: 2026-02-24 (PST, OpenAPI pagination-marker hardening + ADR-022 planning refresh)
 
 ## What was accomplished in this pass
 - Re-inspected current docs/test/CI posture for REST+MCP release readiness.
 - Added **ADR-021** (`ADR-021-java21-toolchain-readiness-and-verification-provenance-ladder.md`) to formalize Java 21 preflight + verification-source policy.
+- Added **ADR-022** (`ADR-022-release-evidence-minimum-test-signal-set-policy.md`) to require minimum test-signal declaration in release evidence.
 - Updated planning and release evidence artifacts to require explicit preflight declaration:
   - `java -version`
   - `JAVA_HOME` set/unset state
@@ -16,15 +17,16 @@ Last updated: 2026-02-24 (PST, OpenAPI pagination-marker hardening + ADR-021 pla
 1. **CI gate:** `.github/workflows/ci.yml` runs JDK 21 + `./gradlew check`.
 2. **Primary blocker:** local shell lacks Java runtime (`JAVA_HOME`/`java` missing), so verification must be CI-backed unless local Java 21 is provisioned.
 3. **Release lane policy:** ADR-018 feature-freeze still applies until lane closure.
-4. **Evidence policy:** ADR-019 freshness/SHA parity + ADR-021 source/preflight declaration are both required.
+4. **Evidence policy:** ADR-019 freshness/SHA parity + ADR-021 source/preflight + ADR-022 minimum signal declarations are required.
 5. **Docs governance policy:** ADR-020 still requires same-PR doc/test sync for release-policy ADR additions.
 
 ## Next coding slice (strict order)
 1. **TKT-P1-G21** — capture Java preflight + declare verification source.
 2. **TKT-P1-G15** — run Java-21 verification (`updateOpenApiSnapshot`, `check`) and commit snapshot only if regenerated.
-3. **TKT-P1-G19** — complete release evidence + PR template provenance/freshness/preflight fields.
-4. **TKT-P1-G17** — final canonical ADR reference hygiene sweep.
-5. **TKT-P2-A18** — continue cursor phase-2 planning after lane closure.
+3. **TKT-P1-G22** — complete minimum signal-test declarations in release evidence + PR template.
+4. **TKT-P1-G19** — complete release evidence provenance/freshness/preflight fields.
+5. **TKT-P1-G17** — final canonical ADR reference hygiene sweep.
+6. **TKT-P2-A18** — continue cursor phase-2 planning after lane closure.
 
 ## Done criteria for immediate slice
 - CI green for PR head SHA.
@@ -43,6 +45,7 @@ Last updated: 2026-02-24 (PST, OpenAPI pagination-marker hardening + ADR-021 pla
 - `ADR-019-release-evidence-provenance-and-freshness-policy.md`
 - `ADR-020-release-contract-documentation-coverage-policy.md`
 - `ADR-021-java21-toolchain-readiness-and-verification-provenance-ladder.md`
+- `ADR-022-release-evidence-minimum-test-signal-set-policy.md`
 
 ## Environment caveat for this run
 - Local verification was blocked in-session (`JAVA_HOME` unset, `java` missing), so no Java-dependent checks were executed from this shell.

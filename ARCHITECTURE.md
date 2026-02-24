@@ -65,6 +65,7 @@ MCP correlation policy (`ADR-012-mcp-correlation-id-canonicalization-policy.md`)
 - Release evidence provenance + freshness requirements follow `ADR-019-release-evidence-provenance-and-freshness-policy.md` (source declaration, head-SHA parity, <=24h freshness window).
 - Release-policy documentation contract coverage follows `ADR-020-release-contract-documentation-coverage-policy.md` (canonical ADR-set checks extend to planning + evidence artifacts).
 - Java 21 verification provenance-ladder policy follows `ADR-021-java21-toolchain-readiness-and-verification-provenance-ladder.md` (local-preferred, CI fallback, mandatory preflight declaration in evidence artifacts).
+- Release evidence minimum test-signal policy follows `ADR-022-release-evidence-minimum-test-signal-set-policy.md` (required signal statuses for parity/runtime/OpenAPI/docs-contract checks).
 
 ## Mongo implementation status
 Implemented:
