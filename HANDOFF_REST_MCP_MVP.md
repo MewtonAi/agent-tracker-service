@@ -1,46 +1,35 @@
 # Developer Handoff — REST + MCP Post-MVP Hardening
 
-Last updated: 2026-02-24 (PST, post-inspection refresh)
+Last updated: 2026-02-24 (PST, developer implementation pass)
 
-## What changed in this product/architecture pass
-- Re-inspected latest code/docs/tests/CI state for REST + MCP readiness.
-- Closed architecture decision drift by adding:
-  - `ADR-012-mcp-correlation-id-precedence-and-fallback.md` (final v1 policy; supersedes ADR-011)
-  - `ADR-013-task-list-pagination-contract-v1-offset-cursor.md` (current pagination contract + follow-up path)
-- Re-ranked delivery slices: **OpenAPI snapshot reconciliation first**, then pagination internals optimization.
+## What changed in this run
+- Hardened pagination determinism by aligning sort tie-break contract to `updatedAt DESC, taskId DESC` across stores.
+- Hardened MCP correlation propagation by canonicalizing caller-supplied `correlationId` as UUID and falling back to generated UUID when absent/blank/invalid.
+- Added focused tests for query pagination bounds/validation and MCP invalid-correlation fallback.
+- Added final ADRs:
+  - `ADR-012-mcp-correlation-id-canonicalization-policy.md` (supersedes ADR-011)
+  - `ADR-013-task-list-pagination-ordering-contract.md`
+- Updated architecture docs for correlation semantics and Mongo sort-support indexes.
 
-## Current engineering baseline (verified)
-- REST task endpoints stable for create/get/list/update-status.
-- MCP tools implemented with shared application services.
-- Pagination contract already present across transports (`limit`, `cursor`, `nextCursor`).
-- MCP supports caller-provided `correlationId` and UUID fallback on errors.
-- CI gate executes `./gradlew check` on push/PR (JDK 21).
-- Contract suites present and gating:
-  - REST/MCP parity
-  - MCP registration + runtime transport handshake/discoverability
-  - OpenAPI strict snapshot drift
-  - Error-code catalog lock
+## Code changes summary
+- `InMemoryTaskStore`: deterministic sort now uses `taskId DESC` tie-break.
+- `TaskMongoRepository`/`MongoTaskStore`: method contracts switched to `...OrderByUpdatedAtDescTaskIdDesc`.
+- `MongoIndexInitializer`: compound indexes now include `taskId` with `updatedAt`.
+- `TaskMcpTools`: `resolveCorrelationId` now enforces UUID canonicalization with fallback.
 
-## Environment caveat from this pass
-- Local `./gradlew check` could not be run here because `JAVA_HOME` is not configured.
-- OpenAPI snapshot likely stale relative to implemented pagination markers; needs Java 21 regeneration run.
-- No runtime code changed in this pass; updates are docs/ADR/planning only.
+## Test additions/updates
+- Added `TaskQueryServiceTest`:
+  - pagination + `nextCursor` terminal behavior
+  - invalid `cursor`/`limit` bounds rejection
+  - cursor past end returns empty page + `nextCursor=null`
+- Updated `TaskRestMcpParityTest`:
+  - UUID propagation assertion for caller-supplied correlation IDs
+  - invalid correlation input fallback to generated UUID
 
-## Recommended next coding slice
-### TKT-P1-G15 — OpenAPI snapshot reconciliation
-Definition of done:
-- Run `./gradlew updateOpenApiSnapshot` and `./gradlew check` on Java 21 environment.
-- Commit `openapi/openapi.yaml` if regenerated output differs.
-- Confirm `verifyOpenApiSnapshot` and marker assertions pass in CI.
+## Environment caveat
+- Local build/tests could not be executed in this shell (Java/JAVA_HOME unavailable).
+- CI `./gradlew check` remains the authoritative gate.
 
-## Follow-on slice
-### TKT-P1-A16 — Store-level pagination optimization
-Definition of done:
-- Move list pagination from full-read-then-slice to store-level paginated path.
-- Preserve external `limit/cursor/nextCursor` semantics for REST and MCP.
-- Keep parity and terminal-page behavior contract tests green.
-
-## Implementation notes
-- Maintain stable error `code` values while evolving internals.
-- Keep cursor externally opaque; avoid leaking offset assumptions in contract language.
-- Preserve backward compatibility for callers omitting pagination params.
+## Suggested next slice
+1. Run Java 21 local verification (`./gradlew check`) and refresh OpenAPI snapshot if drift exists.
+2. Continue with store-level pagination optimization (seek/DB-backed) while preserving current external envelope contract.

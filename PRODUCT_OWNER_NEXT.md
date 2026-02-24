@@ -101,7 +101,10 @@ Reduce list-query cost at scale while preserving the external REST/MCP paginatio
 - Pagination contract is codified in `ADR-013`; implementation optimization is still pending.
 
 ## 7) 2026-02-24 developer run delta
-- Added ADR-012 (MCP correlation source precedence + UUID fallback, superseding ADR-011 interim policy).
-- Added ADR-013 (v1 offset-cursor pagination contract + migration guardrails).
-- Rebased product roadmap to focus first on OpenAPI snapshot reconciliation, then pagination internals optimization.
+- Hardened list ordering contract to `updatedAt DESC, taskId DESC` across in-memory and Mongo implementations.
+- Updated Mongo repositories/indexes to match deterministic pagination ordering (`taskId` included in sort-support indexes).
+- Finalized MCP correlation behavior implementation: propagate caller `correlationId` when valid UUID; generate UUID fallback for absent/blank/invalid inputs.
+- Added `TaskQueryServiceTest` coverage for cursor/limit bounds and terminal-page `nextCursor=null` behavior.
+- Extended MCP parity tests to assert invalid-correlation fallback produces a valid UUID.
+- Added ADR-012 (final MCP correlation canonicalization; supersedes ADR-011) and ADR-013 (pagination ordering contract).
 - Local validation blocker persists: Java 21 (`JAVA_HOME`) missing in this shell.
