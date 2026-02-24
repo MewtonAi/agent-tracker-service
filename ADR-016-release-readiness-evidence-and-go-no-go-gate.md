@@ -29,4 +29,7 @@ For each release candidate, maintain a single evidence bundle (in PR description
 - Requires discipline in PR templates/checklists to stay effective.
 
 ## Follow-up
-- Add an implementation ticket to encode this evidence bundle in repository workflow artifacts (PR checklist or scripted summary).
+- Implemented by ADR-017 with repository artifacts:
+  - `docs/release-evidence.md`
+  - `.github/pull_request_template.md`
+- Keep template headings synchronized when evidence fields evolve.
