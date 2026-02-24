@@ -49,7 +49,7 @@ public class MongoIndexInitializer {
             }
 
             collection.createIndex(requiredIndex.keys(), options);
-            String outcome = existingIndexNames.contains(requiredIndex.name()) ? "existing" : "created";
+            String outcome = existingIndexNames.contains(requiredIndex.name()) ? "already_exists" : "created";
             LOG.info(
                 "event=mongo_index_state db={} collection={} index={} outcome={} keys={} unique={} ttlSeconds={}",
                 databaseName,

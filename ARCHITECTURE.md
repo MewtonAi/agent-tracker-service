@@ -58,8 +58,8 @@ Current mapped codes:
 - `BAD_REQUEST` (400)
 - `INTERNAL_ERROR` (500)
 
-`X-Correlation-Id` is echoed from REST request header or generated when missing.
-MCP correlation policy (`ADR-012-mcp-correlation-id-canonicalization-policy.md`): tool-request `correlationId` is propagated when it is a valid UUID; UUID fallback is generated when absent/blank/invalid.
+Correlation-id normalization is centralized in `application.contract.CorrelationIdNormalizer` and shared by REST + MCP.
+For both transports, UUID correlation IDs are propagated; when absent/blank/invalid, a UUID fallback is generated.
 
 ## Contract governance
 - `verifyOpenApiSnapshot` enforces strict generated-vs-checked-in equality for `openapi/openapi.yaml`.

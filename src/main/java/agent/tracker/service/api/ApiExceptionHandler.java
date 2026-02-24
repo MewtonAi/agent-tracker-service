@@ -1,5 +1,6 @@
 package agent.tracker.service.api;
 
+import agent.tracker.service.application.contract.CorrelationIdNormalizer;
 import agent.tracker.service.domain.exception.ConcurrentModificationException;
 import agent.tracker.service.domain.exception.ConflictException;
 import agent.tracker.service.domain.exception.IdempotencyKeyReuseMismatchException;
@@ -13,11 +14,16 @@ import io.micronaut.http.annotation.Error;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.exceptions.HttpStatusException;
 import jakarta.validation.ConstraintViolationException;
-import java.util.UUID;
 
 @Produces
 @Controller
 public class ApiExceptionHandler {
+
+    private final CorrelationIdNormalizer correlationIdNormalizer;
+
+    public ApiExceptionHandler(CorrelationIdNormalizer correlationIdNormalizer) {
+        this.correlationIdNormalizer = correlationIdNormalizer;
+    }
 
     @Error(global = true, exception = NotFoundException.class)
     public HttpResponse<ApiProblem> handleNotFound(HttpRequest<?> request, NotFoundException exception) {
@@ -66,7 +72,7 @@ public class ApiExceptionHandler {
     }
 
     private HttpResponse<ApiProblem> respond(HttpRequest<?> request, HttpStatus status, String code, String detail) {
-        String correlationId = request.getHeaders().get("X-Correlation-Id", UUID.randomUUID().toString());
+        String correlationId = correlationIdNormalizer.normalizeOrGenerate(request.getHeaders().get("X-Correlation-Id"));
         ApiProblem body = new ApiProblem(
             "https://api.agent-tracker/errors/" + code.toLowerCase(),
             status.getReason(),

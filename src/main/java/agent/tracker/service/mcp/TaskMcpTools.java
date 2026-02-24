@@ -3,6 +3,7 @@ package agent.tracker.service.mcp;
 import agent.tracker.service.application.TaskCommandService;
 import agent.tracker.service.application.TaskListPage;
 import agent.tracker.service.application.TaskQueryService;
+import agent.tracker.service.application.contract.CorrelationIdNormalizer;
 import agent.tracker.service.application.contract.TaskInputNormalizer;
 import agent.tracker.service.domain.contract.CreateTaskCommand;
 import agent.tracker.service.domain.contract.UpdateTaskStatusCommand;
@@ -19,7 +20,6 @@ import agent.tracker.service.domain.model.TaskStatus;
 import agent.tracker.service.domain.model.TaskType;
 import jakarta.inject.Singleton;
 import java.util.List;
-import java.util.UUID;
 
 @Singleton
 public class TaskMcpTools {
@@ -27,11 +27,18 @@ public class TaskMcpTools {
     private final TaskCommandService commandService;
     private final TaskQueryService queryService;
     private final TaskInputNormalizer inputNormalizer;
+    private final CorrelationIdNormalizer correlationIdNormalizer;
 
-    public TaskMcpTools(TaskCommandService commandService, TaskQueryService queryService, TaskInputNormalizer inputNormalizer) {
+    public TaskMcpTools(
+        TaskCommandService commandService,
+        TaskQueryService queryService,
+        TaskInputNormalizer inputNormalizer,
+        CorrelationIdNormalizer correlationIdNormalizer
+    ) {
         this.commandService = commandService;
         this.queryService = queryService;
         this.inputNormalizer = inputNormalizer;
+        this.correlationIdNormalizer = correlationIdNormalizer;
     }
 
     public TaskToolResponse createTask(CreateTaskToolRequest request) {
@@ -72,8 +79,8 @@ public class TaskMcpTools {
         ))));
     }
 
-    private static <T> T run(String requestedCorrelationId, CheckedSupplier<T> supplier) {
-        String correlationId = resolveCorrelationId(requestedCorrelationId);
+    private <T> T run(String requestedCorrelationId, CheckedSupplier<T> supplier) {
+        String correlationId = correlationIdNormalizer.normalizeOrGenerate(requestedCorrelationId);
         try {
             return supplier.get();
         } catch (NotFoundException exception) {
@@ -111,19 +118,6 @@ public class TaskMcpTools {
             throw new IllegalArgumentException(toolName + " request must not be null");
         }
         return request;
-    }
-
-    private static String resolveCorrelationId(String requestedCorrelationId) {
-        if (requestedCorrelationId == null || requestedCorrelationId.isBlank()) {
-            return UUID.randomUUID().toString();
-        }
-
-        String trimmed = requestedCorrelationId.trim();
-        try {
-            return UUID.fromString(trimmed).toString();
-        } catch (IllegalArgumentException ignored) {
-            return UUID.randomUUID().toString();
-        }
     }
 
     @FunctionalInterface

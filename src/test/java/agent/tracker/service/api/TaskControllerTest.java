@@ -17,6 +17,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -64,9 +65,10 @@ class TaskControllerTest {
 
     @Test
     void shouldReturnNotFoundProblemWithCorrelationId() {
+        String correlationId = "123e4567-e89b-12d3-a456-426614174001";
         HttpClientResponseException exception = assertThrows(HttpClientResponseException.class, () ->
             client.toBlocking().exchange(
-                HttpRequest.GET("/v1/tasks/missing").header("X-Correlation-Id", "corr-123"),
+                HttpRequest.GET("/v1/tasks/missing").header("X-Correlation-Id", correlationId),
                 Map.class
             )
         );
@@ -74,7 +76,7 @@ class TaskControllerTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
         Map<?, ?> body = exception.getResponse().getBody(Map.class).orElseThrow();
         assertEquals("TASK_NOT_FOUND", body.get("code"));
-        assertEquals("corr-123", body.get("correlationId"));
+        assertEquals(correlationId, body.get("correlationId"));
     }
 
     @Test
@@ -152,7 +154,7 @@ class TaskControllerTest {
 
     @Test
     void shouldEchoCorrelationIdAcrossRestErrorPaths() {
-        String correlationId = "corr-rest-matrix-1";
+        String correlationId = "123e4567-e89b-12d3-a456-426614174002";
 
         HttpClientResponseException notFound = assertThrows(HttpClientResponseException.class, () ->
             client.toBlocking().exchange(
@@ -191,6 +193,22 @@ class TaskControllerTest {
 
         assertEquals(correlationId, conflict.getResponse().getHeaders().get("X-Correlation-Id"));
         assertEquals(correlationId, conflict.getResponse().getBody(Map.class).orElseThrow().get("correlationId"));
+    }
+
+    @Test
+    void shouldGenerateCorrelationIdWhenHeaderMalformed() {
+        HttpClientResponseException exception = assertThrows(HttpClientResponseException.class, () ->
+            client.toBlocking().exchange(
+                HttpRequest.GET("/v1/tasks/missing-malformed-correlation").header("X-Correlation-Id", "corr-123"),
+                Map.class
+            )
+        );
+
+        String headerCorrelationId = exception.getResponse().getHeaders().get("X-Correlation-Id");
+        Map<?, ?> body = exception.getResponse().getBody(Map.class).orElseThrow();
+        assertNotNull(headerCorrelationId);
+        assertEquals(headerCorrelationId, body.get("correlationId"));
+        assertDoesNotThrow(() -> UUID.fromString(headerCorrelationId));
     }
 
     @Test

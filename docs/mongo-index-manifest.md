@@ -22,7 +22,7 @@ At startup, `MongoIndexInitializer` ensures all required indexes exist and emits
 - `db=<database>`
 - `collection=<collection>`
 - `index=<indexName>`
-- `outcome=<created|existing>`
+- `outcome=<created|already_exists>`
 - `keys=<json>`
 - `unique=<true|false>`
 - `ttlSeconds=<number|null>`
