@@ -1,6 +1,6 @@
 # Agent Tracker Service Architecture (v1)
 
-Last updated: 2026-02-24 (PST)
+Last updated: 2026-02-24 (PST, late)
 
 ## Purpose
 Task-first system of record for agent work tracking, exposed via REST and prepared for MCP parity.
@@ -62,12 +62,10 @@ Implemented:
 - idempotency observability markers emitted (`idempotency.first_write`, `idempotency.replay_hit`, `idempotency.mismatch_reject`) with operation dimension
 
 Remaining MVP-critical gaps:
-- parity tests are not yet wired as an explicit CI release gate
-- MCP runtime registration/schema verification not yet wired
-- OpenAPI snapshot/diff governance absent
+- MCP runtime registration/schema verification is context-level only; transport-wire `tools/list` handshake gate is still missing
+- OpenAPI governance currently validates required markers in committed snapshot but does not yet enforce generated-vs-snapshot equality
 
 ## Current architectural focus (next)
-1. Wire REST↔MCP parity scenarios as required CI gate.
-2. Add MCP runtime smoke verification (discoverability/schema) and enforce it pre-merge.
-3. Add OpenAPI snapshot + drift check to lock externally visible REST contract.
-4. Post-MVP: promote idempotency markers to metrics dashboards/alerts.
+1. Close MCP runtime verification to transport-wire parity (`tools/list` discoverability + required fields).
+2. Harden OpenAPI governance to deterministic generated-vs-checked-in diff enforcement.
+3. Post-MVP: promote idempotency markers to metrics dashboards/alerts.

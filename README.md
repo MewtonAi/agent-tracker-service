@@ -20,9 +20,11 @@ Current implementation snapshot:
 - Mongo idempotency TTL retention is configurable via `idempotency.ttl-hours` / `IDEMPOTENCY_TTL_HOURS` (default 48h)
 
 ## Next priorities
-1. MCP runtime wire-level `tools/list` smoke check against live HTTP transport
-2. Tighten OpenAPI drift gate from baseline snapshot checks to generated-vs-checked-in comparison
+1. MCP runtime wire-level `tools/list` smoke check against live HTTP transport (MVP gate)
+2. Tighten OpenAPI drift gate from marker checks to strict generated-vs-checked-in comparison (MVP gate)
 3. Post-MVP: promote idempotency observability markers to metrics dashboards/alerts
+
+Gate semantics are codified in `ADR-008-mvp-gate-tightening-for-mcp-transport-and-openapi-drift.md`.
 
 Migration posture note: idempotency semantics are v2-only in this repo lineage (see ADR-007).
 
