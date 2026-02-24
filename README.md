@@ -1,6 +1,6 @@
 ## Agent Tracker Service (MVP)
 
-Current implementation snapshot:
+Current implementation snapshot (inspected 2026-02-24 PST):
 - Canonical v1 Task lifecycle aligned across code/docs (`NEW`, `IN_PROGRESS`, `BLOCKED`, `DONE`, `CANCELED`)
 - Task-first scope (Project APIs deferred)
 - Application services:
@@ -25,13 +25,13 @@ Current implementation snapshot:
 
 ## Current priorities
 1. Reconcile OpenAPI snapshot with shipped pagination/correlation contract fields (`./gradlew updateOpenApiSnapshot && ./gradlew check`)
-2. Wire deterministic release-evidence bundle into PR/handoff flow under ADR-016
+2. Apply release-evidence workflow in PR/handoff artifacts using `docs/release-evidence.md` and `.github/pull_request_template.md`
 3. Finalize ADR/source-of-truth hygiene (canonical references only; superseded ADRs remain historical)
 4. Implement cursor evolution readiness (dual-decode compatibility) under ADR-015 while keeping `limit/cursor/nextCursor` stable
 
 Gate semantics are codified in `ADR-008-mvp-gate-tightening-for-mcp-transport-and-openapi-drift.md`.
 Migration posture note: idempotency semantics are v2-only in this repo lineage (see ADR-007).
-Canonical contract ADR references are governed by ADR-014 (superseded ADR variants are historical only). Cursor evolution compatibility policy is defined in ADR-015. Release go/no-go evidence requirements are defined in ADR-016.
+Canonical contract ADR references are governed by ADR-014 (superseded ADR variants are historical only). Cursor evolution compatibility policy is defined in ADR-015. Release go/no-go evidence requirements are defined in ADR-016, with workflow artifacts in `docs/release-evidence.md` and `.github/pull_request_template.md`.
 
 ## Local validation
 Run:
