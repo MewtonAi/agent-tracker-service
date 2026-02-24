@@ -1,0 +1,9 @@
+micronaut:
+  application:
+    name: agent-tracker-service
+  mcp:
+    server:
+      info:
+        name: mcpdemo
+        version: 0.0.1
+      transport: HTTP

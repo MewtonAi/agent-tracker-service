@@ -1,0 +1,6 @@
+applicationType: default
+defaultPackage: agent.tracker.service
+testFramework: junit
+sourceLanguage: java
+buildTool: gradle
+features: [app-name, data, data-mongodb, gradle, http-client-test, java, java-application, junit, logback, lombok, mcp-http, micronaut-aot, micronaut-build, micronaut-http-validation, netty-server, readme, serialization-jackson, shade, static-resources, test-resources, yaml, yaml-build]
