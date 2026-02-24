@@ -2,7 +2,7 @@
 - 
 
 ## Release Evidence Bundle (required for release candidates)
-Source of truth: `docs/release-evidence.md` (ADR-016 / ADR-017 / ADR-019)
+Source of truth: `docs/release-evidence.md` (ADR-016 / ADR-017 / ADR-019 / ADR-020)
 
 ### 1) CI gate evidence
 - [ ] `./gradlew check` passed on JDK 21
@@ -21,7 +21,7 @@ Source of truth: `docs/release-evidence.md` (ADR-016 / ADR-017 / ADR-019)
 - [ ] Coverage notes:
 
 ### 4) Canonical ADR evidence
-- Canonical ADR set used: ADR-012/013/014/015/016/017/018/019
+- Canonical ADR set used: ADR-012/013/014/015/016/017/018/019/020
 - [ ] Active policy references limited to canonical ADR set above
 - [ ] No superseded ADR cited as active contract
 

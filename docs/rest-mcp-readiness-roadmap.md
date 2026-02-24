@@ -1,12 +1,17 @@
 # REST + MCP Readiness Roadmap
 
-Last updated: 2026-02-24 (PST)
+Last updated: 2026-02-24 (PST, ADR-020 docs-contract coverage pass)
 Owner: Product/Architecture
 
 ## Sequencing model
 - **Lane 0 (contract integrity):** OpenAPI + `check` gate green on JDK 21.
 - **Lane 1 (evidence closure):** release evidence completed with provenance/freshness constraints.
 - **Lane 2 (forward hardening):** cursor phase-2 and platform hardening after Lane 1.
+
+## Governing ADRs for release lanes
+- Lane sequencing / temporary freeze posture: **ADR-018**
+- Evidence provenance + freshness: **ADR-019**
+- Documentation contract coverage + policy-sync rule: **ADR-020**
 
 ## Sprint-ready slices
 
@@ -31,6 +36,8 @@ Owner: Product/Architecture
 - Deliverables:
   - no active docs referencing superseded ADR variants
   - docs point to canonical ADR set consistently
+  - ADR-020 documentation contract tests remain green with planning artifacts in scope (through ADR-020)
+  - docs contract tests stay aligned with any release-policy ADR additions
 - Exit criteria: docs contract test and manual doc review agree.
 
 ### Slice D — TKT-P2-A18 (post-freeze)
@@ -45,3 +52,4 @@ Owner: Product/Architecture
 - Missing local Java runtime causes verification lag.
 - CI evidence can become stale if PR waits too long before merge.
 - Scope creep before Lane 1 closure violates ADR-018 feature-freeze intent.
+- Release-policy ADR drift if docs/tests are not updated together (ADR-020).

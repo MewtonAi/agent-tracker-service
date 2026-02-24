@@ -1,4 +1,4 @@
-# Release Evidence Bundle (ADR-016 / ADR-017)
+# Release Evidence Bundle (ADR-016 / ADR-017 / ADR-019 / ADR-020)
 
 Use this checklist for any PR that claims REST + MCP release readiness.
 
@@ -29,6 +29,7 @@ Reference active contracts only:
 - [ ] `ADR-017-release-evidence-artifact-and-pr-template-policy.md`
 - [ ] `ADR-018-release-candidate-readiness-lanes-and-feature-freeze-policy.md`
 - [ ] `ADR-019-release-evidence-provenance-and-freshness-policy.md`
+- [ ] `ADR-020-release-contract-documentation-coverage-policy.md`
 
 ## 5) Environment constraints
 - [ ] Local/runtime limitation recorded (or mark none)

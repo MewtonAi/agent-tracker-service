@@ -1,26 +1,28 @@
 # PRODUCT_OWNER_NEXT.md
 
-Last updated: 2026-02-24 (PST, product/architecture backlog refinement + ADR-019 pass)
+Last updated: 2026-02-24 (PST, product/architecture backlog refinement + ADR-020 docs-contract coverage)
 Owner: Product/Architecture
 
 ## 1) Current inspection snapshot (this pass)
 
 ### Code + tests + docs
-- ✅ REST/MCP parity posture still anchored in shared application services and parity contract tests.
-- ✅ Mongo idempotency replay handling is hardened for stale replay references (missing task result documents), with integration coverage.
-- ✅ Release-readiness contract tests exist (`ReleaseReadinessDocumentationContractTest`) and enforce canonical ADR hygiene across key docs.
-- ✅ CI workflow remains minimal and correct for release confidence (`.github/workflows/ci.yml` -> JDK 21 + `./gradlew check`).
-- ✅ ADR lane sequencing for release-candidate readiness is in place (ADR-018).
+- ✅ REST/MCP parity posture remains anchored in shared application services and parity contract tests.
+- ✅ Mongo idempotency replay handling includes stale-reference fail-soft behavior with integration coverage.
+- ✅ Release-readiness documentation contract test now expanded to enforce canonical release ADR coverage through ADR-020.
+- ✅ CI workflow remains minimal and release-relevant (`.github/workflows/ci.yml`: JDK 21 + `./gradlew check`).
+- ✅ Release lane sequencing, evidence provenance/freshness, and docs-governance policies are explicitly documented (ADR-018/019/020).
 
 ### Runtime verification
-- ⚠️ Local verification still blocked in this shell: Java runtime unavailable (`JAVA_HOME`/`java` missing).
-- ⚠️ As a result, OpenAPI snapshot freshness and full gate outcome remain "CI-only verifiable" for this pass.
+- ⚠️ Local verification blocked in this shell: Java runtime unavailable (`JAVA_HOME`/`java` missing).
+- ⚠️ OpenAPI snapshot freshness + final gate status remain CI/Java-enabled-workstation verifiable only.
 
 ### Delta introduced in this pass
-- Hardened Mongo idempotency replay lookup to fail soft (null replay) when historical replay record points to a missing task, and added integration coverage for this case.
-- Added ADR-019 to formalize release-evidence provenance + freshness policy.
-- Expanded release-evidence workflow artifacts to include provenance/freshness checks.
-- Added implementation-ready roadmap artifact: `docs/rest-mcp-readiness-roadmap.md`.
+- Added ADR-020 for release-contract documentation coverage policy.
+- Upgraded `ReleaseReadinessDocumentationContractTest` to include:
+  - canonical ADR list through ADR-020,
+  - planning artifact checks,
+  - ADR-019 provenance/freshness assertions.
+- Refined roadmap/backlog/handoff language to include ADR-020 governance.
 
 ---
 
@@ -29,7 +31,7 @@ Owner: Product/Architecture
 ### P1 — Lane closure for release candidate
 1. **TKT-P1-G15 — OpenAPI snapshot reconciliation + CI green evidence**
 2. **TKT-P1-G19 — Evidence provenance/freshness enforcement rollout (ADR-019)**
-3. **TKT-P1-G17 — Canonical ADR reference hygiene final sweep**
+3. **TKT-P1-G17 — Canonical ADR reference hygiene final sweep (through ADR-020)**
 
 ### P2 — Post-lane hardening (after P1 complete)
 4. **TKT-P2-A18 — Cursor phase-2 (seek token) readiness and parity expansion**
@@ -53,14 +55,14 @@ Owner: Product/Architecture
 **Acceptance criteria**
 - `verifyOpenApiSnapshot` passes.
 - `OpenApiSnapshotContractTest` passes.
-- CI run for the PR head SHA is green.
+- CI run for PR head SHA is green.
 - Evidence captures CI URL + SHA + OpenAPI diff outcome.
 
 ### TKT-P1-G19 — Evidence provenance/freshness enforcement rollout
 **Goal**: make GO/NO-GO decisions auditable and time-bounded.
 
 **Scope**
-- Align PR template + release evidence doc with ADR-019 fields:
+- Complete PR template + release evidence fields for ADR-019:
   - evidence source type
   - commit SHA parity
   - freshness window status
@@ -72,15 +74,17 @@ Owner: Product/Architecture
 - Handoff references ADR-019 and records evidence origin.
 
 ### TKT-P1-G17 — Canonical ADR reference hygiene final sweep
-**Goal**: preserve single-source policy references.
+**Goal**: preserve single-source policy references and keep doc tests authoritative.
 
 **Scope**
 - Ensure active docs cite canonical ADR set only.
 - Keep superseded ADRs strictly historical with forward pointers.
+- Keep docs contract tests synchronized with canonical release ADR set (ADR-020 requirement).
 
 **Acceptance criteria**
-- README/ARCHITECTURE/HANDOFF/PRODUCT docs are mutually consistent.
+- README/ARCHITECTURE/HANDOFF/PRODUCT/ROADMAP are mutually consistent.
 - No active policy statement points to superseded ADR files.
+- Canonical set references include ADR-020 where release-policy ADRs are listed.
 
 ### TKT-P2-A18 — Cursor phase-2 readiness
 **Goal**: phase seek-token evolution without wire-contract changes.
@@ -106,10 +110,11 @@ Owner: Product/Architecture
 ## 5) Risk register (live)
 - **R1 OpenAPI drift unknown** until Java-21 execution evidence exists.
 - **R2 Evidence staleness risk** if CI result is not tied to PR head SHA and fresh timestamp.
-- **R3 Premature scope expansion risk** if ADR-018 lane/feature-freeze is bypassed.
+- **R3 Policy drift risk** if release-policy ADR additions are not synchronized with docs contract tests (ADR-020).
+- **R4 Premature scope expansion risk** if ADR-018 lane/feature-freeze is bypassed.
 
 ## 6) Canonical references for active release work
-- ADR-012/013/014/015/016/017/018/019
+- ADR-012/013/014/015/016/017/018/019/020
 - `docs/release-evidence.md`
 - `.github/pull_request_template.md`
 - `docs/rest-mcp-readiness-roadmap.md`

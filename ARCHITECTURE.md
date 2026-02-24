@@ -63,6 +63,7 @@ MCP correlation policy (`ADR-012-mcp-correlation-id-canonicalization-policy.md`)
 - Release evidence artifact location and PR template policy follow `ADR-017-release-evidence-artifact-and-pr-template-policy.md` (`docs/release-evidence.md`, `.github/pull_request_template.md`).
 - Release-candidate sequencing and temporary feature-freeze posture follow `ADR-018-release-candidate-readiness-lanes-and-feature-freeze-policy.md`.
 - Release evidence provenance + freshness requirements follow `ADR-019-release-evidence-provenance-and-freshness-policy.md` (source declaration, head-SHA parity, <=24h freshness window).
+- Release-policy documentation contract coverage follows `ADR-020-release-contract-documentation-coverage-policy.md` (canonical ADR-set checks extend to planning + evidence artifacts).
 
 ## Mongo implementation status
 Implemented:
