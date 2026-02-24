@@ -1,35 +1,32 @@
-# Developer Handoff — REST + MCP Post-MVP Hardening
+# Developer Handoff — REST + MCP Readiness (Post-inspection planning pass)
 
-Last updated: 2026-02-24 (PST, developer implementation pass)
+Last updated: 2026-02-24 (PST)
 
-## What changed in this run
-- Hardened pagination determinism by aligning sort tie-break contract to `updatedAt DESC, taskId DESC` across stores.
-- Hardened MCP correlation propagation by canonicalizing caller-supplied `correlationId` as UUID and falling back to generated UUID when absent/blank/invalid.
-- Added focused tests for query pagination bounds/validation and MCP invalid-correlation fallback.
-- Added final ADRs:
-  - `ADR-012-mcp-correlation-id-canonicalization-policy.md` (supersedes ADR-011)
-  - `ADR-013-task-list-pagination-ordering-contract.md`
-- Updated architecture docs for correlation semantics and Mongo sort-support indexes.
+## What was done in this pass
+- Performed architecture/product inspection across code, tests, CI workflow, and planning docs.
+- Refined prioritized backlog and execution order in `PRODUCT_OWNER_NEXT.md`.
+- Added ADR governance decision:
+  - `ADR-014-contract-source-of-truth-and-supersession-policy.md`
+- Marked duplicate interim ADRs as superseded/historical:
+  - `ADR-012-mcp-correlation-id-precedence-and-fallback.md` → superseded by canonical ADR-012 file
+  - `ADR-013-task-list-pagination-contract-v1-offset-cursor.md` → superseded by canonical ADR-013 file
+- Updated architecture/readme references to canonical contract ADR files.
 
-## Code changes summary
-- `InMemoryTaskStore`: deterministic sort now uses `taskId DESC` tie-break.
-- `TaskMongoRepository`/`MongoTaskStore`: method contracts switched to `...OrderByUpdatedAtDescTaskIdDesc`.
-- `MongoIndexInitializer`: compound indexes now include `taskId` with `updatedAt`.
-- `TaskMcpTools`: `resolveCorrelationId` now enforces UUID canonicalization with fallback.
+## Current truth (for next coding slice)
+1. **CI gate:** `./gradlew check` on JDK 21.
+2. **Top blocker:** OpenAPI snapshot appears stale versus shipped pagination contract; needs Java 21 regen + commit.
+3. **Canonical policy docs:**
+   - MCP correlation: `ADR-012-mcp-correlation-id-canonicalization-policy.md`
+   - Pagination ordering: `ADR-013-task-list-pagination-ordering-contract.md`
+   - ADR supersession governance: `ADR-014-contract-source-of-truth-and-supersession-policy.md`
 
-## Test additions/updates
-- Added `TaskQueryServiceTest`:
-  - pagination + `nextCursor` terminal behavior
-  - invalid `cursor`/`limit` bounds rejection
-  - cursor past end returns empty page + `nextCursor=null`
-- Updated `TaskRestMcpParityTest`:
-  - UUID propagation assertion for caller-supplied correlation IDs
-  - invalid correlation input fallback to generated UUID
+## Next coding slice (implementation order)
+1. Run Java 21 local/CI-compatible verification:
+   - `./gradlew updateOpenApiSnapshot`
+   - `./gradlew check`
+   - commit regenerated `openapi/openapi.yaml`
+2. Complete ADR reference hygiene where any stale links remain.
+3. Start store-level pagination optimization while preserving external `limit/cursor/nextCursor` contract.
 
 ## Environment caveat
-- Local build/tests could not be executed in this shell (Java/JAVA_HOME unavailable).
-- CI `./gradlew check` remains the authoritative gate.
-
-## Suggested next slice
-1. Run Java 21 local verification (`./gradlew check`) and refresh OpenAPI snapshot if drift exists.
-2. Continue with store-level pagination optimization (seek/DB-backed) while preserving current external envelope contract.
+- This shell has no `java` available (`JAVA_HOME` missing), so no local test execution happened in this pass.

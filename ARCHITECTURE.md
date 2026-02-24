@@ -12,7 +12,7 @@ Task-first system of record for agent work tracking, exposed via REST and MCP wi
 - REST and MCP adapters share application services (no transport-specific business rules)
 - Optimistic-write conflicts map to stable code: `CONCURRENT_MODIFICATION` (HTTP 409)
 - Idempotency mismatch maps to stable code: `IDEMPOTENCY_KEY_REUSE_MISMATCH` (HTTP 409)
-- List pagination contract is parity-aligned across REST/MCP (`limit`, `cursor`, `nextCursor`) via ADR-013
+- List pagination contract is parity-aligned across REST/MCP (`limit`, `cursor`, `nextCursor`) via `ADR-013-task-list-pagination-ordering-contract.md`
 
 ## Layered design
 - **api**: REST controllers + global error mapping (RFC7807-style)
@@ -51,12 +51,13 @@ Current mapped codes:
 - `INTERNAL_ERROR` (500)
 
 `X-Correlation-Id` is echoed from REST request header or generated when missing.
-MCP correlation policy (ADR-012): tool-request `correlationId` is propagated when it is a valid UUID; UUID fallback is generated when absent/blank/invalid.
+MCP correlation policy (`ADR-012-mcp-correlation-id-canonicalization-policy.md`): tool-request `correlationId` is propagated when it is a valid UUID; UUID fallback is generated when absent/blank/invalid.
 
 ## Contract governance
 - `verifyOpenApiSnapshot` enforces strict generated-vs-checked-in equality for `openapi/openapi.yaml`.
 - Marker assertions remain as an additional guard for critical routes and error codes.
 - CI workflow gate runs `./gradlew check` on push/PR.
+- ADR source-of-truth governance follows `ADR-014-contract-source-of-truth-and-supersession-policy.md` (superseded ADRs are historical, not active policy).
 
 ## Mongo implementation status
 Implemented:

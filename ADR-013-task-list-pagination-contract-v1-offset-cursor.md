@@ -1,9 +1,11 @@
 # ADR-013: Task List Pagination Contract (v1 Offset Cursor)
 
-- **Status:** Accepted
+- **Status:** Superseded by `ADR-013-task-list-pagination-ordering-contract.md`
 - **Date:** 2026-02-24
 - **Deciders:** product/architecture
 - **Related:** `TaskQueryService`, `TaskController`, `TaskMcpTools`, `TaskRestMcpParityTest`
+
+> Superseded note: Keep for historical context only. Active pagination policy is in `ADR-013-task-list-pagination-ordering-contract.md`.
 
 ## Context
 Task list APIs/tools previously returned unbounded result sets.

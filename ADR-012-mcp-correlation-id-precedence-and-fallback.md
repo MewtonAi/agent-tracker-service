@@ -1,10 +1,12 @@
 # ADR-012: MCP Correlation ID Precedence and Fallback (Final v1 Policy)
 
-- **Status:** Accepted
+- **Status:** Superseded by `ADR-012-mcp-correlation-id-canonicalization-policy.md`
 - **Date:** 2026-02-24
 - **Deciders:** product/architecture
 - **Supersedes:** `ADR-011-mcp-correlation-id-source-policy.md`
 - **Related:** `ADR-010-cross-transport-correlation-id-contract.md`, `ARCHITECTURE.md`, `TaskMcpTools`
+
+> Superseded note: Keep for historical context only. Active MCP correlation policy is in `ADR-012-mcp-correlation-id-canonicalization-policy.md`.
 
 ## Context
 ADR-011 established an interim server-generated-only policy for MCP error correlation IDs.

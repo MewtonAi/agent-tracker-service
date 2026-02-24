@@ -10,7 +10,7 @@ Current implementation snapshot:
 - REST v1 endpoints:
   - `POST /v1/tasks` *(Idempotency-Key required)*
   - `GET /v1/tasks/{id}`
-  - `GET /v1/tasks?status=`
+  - `GET /v1/tasks?status=&cursor=&limit=`
   - `PATCH /v1/tasks/{id}/status` *(Idempotency-Key required)*
 - RFC7807-style API error contract with stable `code` and `correlationId`
 - Concurrency conflict code locked for optimistic-write races: `CONCURRENT_MODIFICATION`
@@ -30,6 +30,7 @@ Current implementation snapshot:
 
 Gate semantics are codified in `ADR-008-mvp-gate-tightening-for-mcp-transport-and-openapi-drift.md`.
 Migration posture note: idempotency semantics are v2-only in this repo lineage (see ADR-007).
+Canonical contract ADR references are governed by ADR-014 (superseded ADR variants are historical only).
 
 ## Local validation
 Run:
