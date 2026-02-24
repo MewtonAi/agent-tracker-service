@@ -1,4 +1,4 @@
-package agent.tracker.service.api.dto;
+package agent.tracker.service.deferred.dto;
 
 import agent.tracker.service.domain.model.AuditMetadata;
 import agent.tracker.service.domain.model.ProjectStatus;

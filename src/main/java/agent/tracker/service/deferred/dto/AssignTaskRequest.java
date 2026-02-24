@@ -1,4 +1,4 @@
-package agent.tracker.service.api.dto;
+package agent.tracker.service.deferred.dto;
 
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.constraints.NotBlank;

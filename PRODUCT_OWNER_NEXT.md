@@ -17,9 +17,9 @@ Owner: Product/Architecture
 - ✅ Idempotency observability counters/docs are in place (`agent_tracker_idempotency_events_total{event,operation}` + `OBSERVABILITY.md`).
 
 ### Confirmed gaps (post-MVP)
-- 🟡 No explicit MCP `correlationId` contract today; REST correlation behavior exists, MCP parity is not yet enforced.
+- 🟡 MCP `correlationId` now exists on tool exceptions and has regression coverage, but caller-supplied propagation semantics are still not defined.
 - 🟡 Task listing remains unpaginated (growth/scalability risk).
-- 🟡 Deferred project DTO/contracts still visible in outward API package surface.
+- ✅ Deferred project DTOs moved to internal deferred namespace (`agent.tracker.service.deferred.dto`).
 
 ---
 
@@ -31,11 +31,11 @@ Owner: Product/Architecture
 ## P1 — Post-MVP hardening (active)
 
 ### EPIC P1-O: Operational traceability + observability
-1. **TKT-P1-O12 — Cross-transport correlation ID propagation contract (REST + MCP)** *(next)*
+1. **TKT-P1-O12 — Cross-transport correlation ID propagation contract (REST + MCP)** *(in progress: MCP error correlationId + matrix tests landed; caller-token propagation pending)*
 
 ### EPIC P1-A: API contract hygiene and scale
-2. **TKT-P1-A13 — Task list cursor pagination contract (REST + MCP parity)**
-3. **TKT-P1-A14 — Defer/internalize project DTO/contracts from outward API package**
+2. **TKT-P1-A13 — Task list cursor pagination contract (REST + MCP parity)** *(next)*
+3. ✅ **TKT-P1-A14 — Defer/internalize project DTO/contracts from outward API package**
 
 ## P2 — Strategic
 - Outbox/event publishing
