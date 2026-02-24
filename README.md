@@ -12,12 +12,15 @@ Current implementation snapshot:
   - `GET /v1/tasks?status=`
   - `PATCH /v1/tasks/{id}/status` *(Idempotency-Key required)*
 - RFC7807-style API error contract with stable `code` and `correlationId`
+- Concurrency conflict code locked for optimistic-write races: `CONCURRENT_MODIFICATION`
+- Status update idempotency is scoped by `(taskId, idempotencyKey)` to avoid cross-task replay collisions
+- Mongo idempotency TTL retention is configurable via `idempotency.ttl-hours` / `IDEMPOTENCY_TTL_HOURS`
 
 ## Next priorities
-1. Contract hardening: concurrency error-code lock + invalid status input normalization
-2. Durable idempotency v2: `(operation,key)` uniqueness, payload hash policy, TTL retention
-3. MCP tool delivery (`create_task`, `get_task`, `list_tasks`, `update_task_status`) + REST/MCP parity suite
-4. OpenAPI generation/check-in + CI contract drift gate
+1. Durable idempotency v2: `(operation,key)` uniqueness + payload hash mismatch policy (`IDEMPOTENCY_KEY_REUSE_MISMATCH`)
+2. MCP tool delivery (`create_task`, `get_task`, `list_tasks`, `update_task_status`) + REST/MCP parity suite
+3. OpenAPI generation/check-in + CI contract drift gate
+4. Concurrency integration test path for deterministic 409 under contested writes
 
 ## Local validation
 Run:

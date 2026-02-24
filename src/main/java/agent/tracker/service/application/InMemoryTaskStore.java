@@ -35,8 +35,8 @@ public class InMemoryTaskStore implements TaskStore {
     }
 
     @Override
-    public Task findStatusReplay(String idempotencyKey) {
-        return statusByIdempotency.get(idempotencyKey);
+    public Task findStatusReplay(String taskId, String idempotencyKey) {
+        return statusByIdempotency.get(statusScope(taskId, idempotencyKey));
     }
 
     @Override
@@ -45,13 +45,17 @@ public class InMemoryTaskStore implements TaskStore {
     }
 
     @Override
-    public void saveStatusReplay(String idempotencyKey, Task task) {
-        statusByIdempotency.put(idempotencyKey, task);
+    public void saveStatusReplay(String taskId, String idempotencyKey, Task task) {
+        statusByIdempotency.put(statusScope(taskId, idempotencyKey), task);
     }
 
     @Override
     public Task save(Task task) {
         tasks.put(task.getTaskId(), task);
         return task;
+    }
+
+    private static String statusScope(String taskId, String idempotencyKey) {
+        return taskId + ":" + idempotencyKey;
     }
 }

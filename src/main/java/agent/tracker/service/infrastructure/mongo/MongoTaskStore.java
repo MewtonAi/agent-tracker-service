@@ -1,7 +1,7 @@
 package agent.tracker.service.infrastructure.mongo;
 
 import agent.tracker.service.application.TaskStore;
-import agent.tracker.service.domain.exception.ConflictException;
+import agent.tracker.service.domain.exception.ConcurrentModificationException;
 import agent.tracker.service.domain.model.AgentRef;
 import agent.tracker.service.domain.model.AuditMetadata;
 import agent.tracker.service.domain.model.Task;
@@ -42,8 +42,8 @@ public class MongoTaskStore implements TaskStore {
     }
 
     @Override
-    public Task findStatusReplay(String idempotencyKey) {
-        return findReplay("status:" + idempotencyKey);
+    public Task findStatusReplay(String taskId, String idempotencyKey) {
+        return findReplay(statusScope(taskId, idempotencyKey));
     }
 
     @Override
@@ -52,8 +52,8 @@ public class MongoTaskStore implements TaskStore {
     }
 
     @Override
-    public void saveStatusReplay(String idempotencyKey, Task task) {
-        saveReplay("status:" + idempotencyKey, task);
+    public void saveStatusReplay(String taskId, String idempotencyKey, Task task) {
+        saveReplay(statusScope(taskId, idempotencyKey), task);
     }
 
     @Override
@@ -62,7 +62,7 @@ public class MongoTaskStore implements TaskStore {
             TaskDocument saved = taskRepository.save(toDocument(task));
             return toDomain(saved);
         } catch (OptimisticLockException e) {
-            throw new ConflictException("Task update conflict: " + task.getTaskId());
+            throw new ConcurrentModificationException("Task update conflict: " + task.getTaskId());
         }
     }
 
@@ -79,7 +79,10 @@ public class MongoTaskStore implements TaskStore {
         }
         try {
             idempotencyRepository.save(new IdempotencyRecordDocument(key, task.getTaskId(), null));
-        } catch (RuntimeException ignored) {
+        } catch (RuntimeException exception) {
+            if (!isDuplicateIdempotencyKey(exception)) {
+                throw exception;
+            }
             // race on first insert; read-path remains idempotent
         }
     }
@@ -136,5 +139,14 @@ public class MongoTaskStore implements TaskStore {
             return null;
         }
         return new AgentRefEmbeddable(ref.agentId(), ref.displayName(), ref.capabilities());
+    }
+
+    private static String statusScope(String taskId, String idempotencyKey) {
+        return "status:" + taskId + ":" + idempotencyKey;
+    }
+
+    private static boolean isDuplicateIdempotencyKey(RuntimeException exception) {
+        String message = exception.getMessage();
+        return message != null && message.contains("E11000");
     }
 }

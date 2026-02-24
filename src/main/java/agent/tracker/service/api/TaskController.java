@@ -19,7 +19,9 @@ import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.QueryValue;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 @Controller("/v1/tasks")
 public class TaskController {
@@ -55,7 +57,7 @@ public class TaskController {
 
     @Get
     public List<TaskResponse> list(@QueryValue(defaultValue = "") String status) {
-        TaskStatus filter = status.isBlank() ? null : TaskStatus.valueOf(status);
+        TaskStatus filter = parseStatusFilter(status);
         return queryService.listTasks(filter).stream().map(TaskController::toResponse).toList();
     }
 
@@ -80,5 +82,17 @@ public class TaskController {
             task.getAssignee(),
             task.getAudit()
         );
+    }
+
+    private static TaskStatus parseStatusFilter(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        try {
+            return TaskStatus.valueOf(status.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            String allowed = Arrays.stream(TaskStatus.values()).map(Enum::name).sorted().reduce((left, right) -> left + ", " + right).orElse("");
+            throw new IllegalArgumentException("status must be one of [" + allowed + "]");
+        }
     }
 }

@@ -1,6 +1,6 @@
 # PRODUCT_OWNER_NEXT.md
 
-Last updated: 2026-02-23 (PST)
+Last updated: 2026-02-24 (PST)
 Owner: Product/Architecture
 
 ## 1) Code-verified implementation snapshot
@@ -23,9 +23,9 @@ Owner: Product/Architecture
 - ❌ MCP tool surface not implemented (`create_task`, `get_task`, `list_tasks`, `update_task_status`).
 - ❌ REST/MCP parity suite not implemented.
 - 🟡 Durable idempotency model is partial (key only; no operation + payload fingerprint + TTL policy).
-- 🟡 Conflict semantics not fully hardened (current code: `TASK_CONFLICT`; ADR target suggests `CONCURRENT_MODIFICATION`).
-- 🟡 Index strategy/docs drift: architecture target and actual initializer differ.
-- 🟡 Invalid `status` query handling is framework-leaky (`TaskStatus.valueOf`) and needs explicit contract mapping.
+- ✅ Conflict semantics now expose stable optimistic-lock code `CONCURRENT_MODIFICATION`.
+- ✅ Index strategy in initializer now matches target query paths (`status+updatedAt`, `updatedAt`) and idempotency TTL support.
+- ✅ Invalid `status` query handling now returns explicit contract-level 400 (`BAD_REQUEST`) with stable message.
 - ❌ OpenAPI generation/snapshot/diff gate missing.
 
 ---

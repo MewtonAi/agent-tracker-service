@@ -11,11 +11,11 @@ public interface TaskStore {
 
     Task findCreateReplay(String idempotencyKey);
 
-    Task findStatusReplay(String idempotencyKey);
+    Task findStatusReplay(String taskId, String idempotencyKey);
 
     void saveCreateReplay(String idempotencyKey, Task task);
 
-    void saveStatusReplay(String idempotencyKey, Task task);
+    void saveStatusReplay(String taskId, String idempotencyKey, Task task);
 
     Task save(Task task);
 }

@@ -9,3 +9,6 @@ micronaut:
       transport: HTTP
 mongodb:
   uri: ${MONGODB_URI:`mongodb://localhost:27017/agent_tracker`}
+
+idempotency:
+  ttl-hours: ${IDEMPOTENCY_TTL_HOURS:72}

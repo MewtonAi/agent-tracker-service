@@ -49,4 +49,17 @@ class TaskLifecycleServiceTest {
         assertEquals(TaskStatus.DONE, done.getStatus());
         assertEquals(TaskStatus.DONE, replay.getStatus());
     }
+
+    @Test
+    void shouldScopeStatusIdempotencyByTaskId() {
+        Task first = commandService.createTask(new CreateTaskCommand("first", null, TaskType.FEATURE, TaskPriority.MEDIUM, "owner", "idem-create-4"));
+        Task second = commandService.createTask(new CreateTaskCommand("second", null, TaskType.FEATURE, TaskPriority.MEDIUM, "owner", "idem-create-5"));
+
+        Task firstUpdate = commandService.updateTaskStatus(new UpdateTaskStatusCommand(first.getTaskId(), TaskStatus.IN_PROGRESS, "owner", "shared-status-key"));
+        Task secondUpdate = commandService.updateTaskStatus(new UpdateTaskStatusCommand(second.getTaskId(), TaskStatus.IN_PROGRESS, "owner", "shared-status-key"));
+
+        assertEquals(TaskStatus.IN_PROGRESS, firstUpdate.getStatus());
+        assertEquals(TaskStatus.IN_PROGRESS, secondUpdate.getStatus());
+        assertNotEquals(firstUpdate.getTaskId(), secondUpdate.getTaskId());
+    }
 }

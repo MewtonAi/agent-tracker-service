@@ -1,5 +1,6 @@
 package agent.tracker.service.api;
 
+import agent.tracker.service.domain.exception.ConcurrentModificationException;
 import agent.tracker.service.domain.exception.ConflictException;
 import agent.tracker.service.domain.exception.InvalidTaskTransitionException;
 import agent.tracker.service.domain.exception.NotFoundException;
@@ -25,6 +26,11 @@ public class ApiExceptionHandler {
     @Error(global = true, exception = InvalidTaskTransitionException.class)
     public HttpResponse<ApiProblem> handleConflict(HttpRequest<?> request, InvalidTaskTransitionException exception) {
         return respond(request, HttpStatus.CONFLICT, "INVALID_TASK_TRANSITION", exception.getMessage());
+    }
+
+    @Error(global = true, exception = ConcurrentModificationException.class)
+    public HttpResponse<ApiProblem> handleConcurrentModification(HttpRequest<?> request, ConcurrentModificationException exception) {
+        return respond(request, HttpStatus.CONFLICT, "CONCURRENT_MODIFICATION", exception.getMessage());
     }
 
     @Error(global = true, exception = ConflictException.class)

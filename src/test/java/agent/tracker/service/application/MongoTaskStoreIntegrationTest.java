@@ -64,4 +64,42 @@ class MongoTaskStoreIntegrationTest {
         assertEquals(TaskStatus.IN_PROGRESS, updated.getStatus());
         assertEquals(TaskStatus.IN_PROGRESS, statusReplay.getStatus());
     }
+
+    @Test
+    void shouldScopeStatusIdempotencyByTaskId() {
+        Task first = commandService.createTask(new CreateTaskCommand(
+            "first",
+            "mongo",
+            TaskType.FEATURE,
+            TaskPriority.HIGH,
+            "integration",
+            "mongo-create-scope-1"
+        ));
+
+        Task second = commandService.createTask(new CreateTaskCommand(
+            "second",
+            "mongo",
+            TaskType.FEATURE,
+            TaskPriority.HIGH,
+            "integration",
+            "mongo-create-scope-2"
+        ));
+
+        Task firstUpdate = commandService.updateTaskStatus(new UpdateTaskStatusCommand(
+            first.getTaskId(),
+            TaskStatus.IN_PROGRESS,
+            "integration",
+            "shared-mongo-status-key"
+        ));
+
+        Task secondUpdate = commandService.updateTaskStatus(new UpdateTaskStatusCommand(
+            second.getTaskId(),
+            TaskStatus.IN_PROGRESS,
+            "integration",
+            "shared-mongo-status-key"
+        ));
+
+        assertEquals(TaskStatus.IN_PROGRESS, firstUpdate.getStatus());
+        assertEquals(TaskStatus.IN_PROGRESS, secondUpdate.getStatus());
+    }
 }

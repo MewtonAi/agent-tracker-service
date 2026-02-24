@@ -87,4 +87,33 @@ class TaskControllerTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
     }
+
+    @Test
+    void shouldAcceptCaseInsensitiveStatusFilter() {
+        TaskResponse created = client.toBlocking().retrieve(
+            HttpRequest.POST("/v1/tasks", new CreateTaskRequest("List API", "desc", TaskType.FEATURE, TaskPriority.HIGH, "qa"))
+                .header("Idempotency-Key", "rest-create-case-filter"),
+            TaskResponse.class
+        );
+
+        client.toBlocking().retrieve(
+            HttpRequest.PATCH("/v1/tasks/" + created.taskId() + "/status", new UpdateTaskStatusRequest(TaskStatus.IN_PROGRESS, "qa"))
+                .header("Idempotency-Key", "rest-status-case-filter"),
+            TaskResponse.class
+        );
+
+        TaskResponse[] tasks = client.toBlocking().retrieve(HttpRequest.GET("/v1/tasks?status=in_progress"), TaskResponse[].class);
+        assertTrue(tasks.length > 0);
+    }
+
+    @Test
+    void shouldReturnBadRequestForInvalidStatusFilter() {
+        HttpClientResponseException exception = assertThrows(HttpClientResponseException.class, () ->
+            client.toBlocking().exchange(HttpRequest.GET("/v1/tasks?status=wat"), Map.class)
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        Map<?, ?> body = exception.getResponse().getBody(Map.class).orElseThrow();
+        assertEquals("BAD_REQUEST", body.get("code"));
+    }
 }

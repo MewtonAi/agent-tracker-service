@@ -55,7 +55,7 @@ public class TaskCommandService {
 
     public Task updateTaskStatus(UpdateTaskStatusCommand command) {
         String idempotencyKey = requireText(command.idempotencyKey(), "idempotencyKey");
-        Task existingReplay = store.findStatusReplay(idempotencyKey);
+        Task existingReplay = store.findStatusReplay(command.taskId(), idempotencyKey);
         if (existingReplay != null) {
             return existingReplay;
         }
@@ -72,7 +72,7 @@ public class TaskCommandService {
             .build();
 
         Task saved = store.save(updated);
-        store.saveStatusReplay(idempotencyKey, saved);
+        store.saveStatusReplay(command.taskId(), idempotencyKey, saved);
         return saved;
     }
 
