@@ -1,6 +1,6 @@
 # Agent Tracker Service Architecture (v1)
 
-Last updated: 2026-02-24 (PST, release-evidence workflow refresh)
+Last updated: 2026-02-24 (PST, readiness-lanes refresh)
 
 ## Purpose
 Task-first system of record for agent work tracking, exposed via REST and MCP with shared business semantics.
@@ -61,6 +61,7 @@ MCP correlation policy (`ADR-012-mcp-correlation-id-canonicalization-policy.md`)
 - Cursor token evolution governance follows `ADR-015-cursor-token-evolution-and-backward-compatibility.md` (cursor remains externally opaque across token format changes).
 - Release go/no-go evidence bundle policy follows `ADR-016-release-readiness-evidence-and-go-no-go-gate.md`.
 - Release evidence artifact location and PR template policy follow `ADR-017-release-evidence-artifact-and-pr-template-policy.md` (`docs/release-evidence.md`, `.github/pull_request_template.md`).
+- Release-candidate sequencing and temporary feature-freeze posture follow `ADR-018-release-candidate-readiness-lanes-and-feature-freeze-policy.md`.
 
 ## Mongo implementation status
 Implemented:
@@ -76,7 +77,7 @@ Implemented:
 - idempotency observability markers emitted (`idempotency.first_write`, `idempotency.replay_hit`, `idempotency.mismatch_reject`) with operation dimension
 
 ## Active architectural focus (post-MVP)
-1. **OpenAPI snapshot reconciliation for shipped pagination/correlation fields** (run on Java 21, commit regenerated snapshot, restore CI confidence).
-2. **Release-evidence workflow enforcement**: use repository artifacts (`docs/release-evidence.md`, PR template) per ADR-017 so ADR-016 evidence is captured consistently.
-3. **Cursor evolution readiness**: keep offset compatibility while introducing dual-decode path for future seek-style tokens under ADR-015.
+1. **Lane 0 completion (ADR-018):** OpenAPI snapshot reconciliation on Java 21 and CI green evidence.
+2. **Lane 1 completion (ADR-018):** release-evidence closure in PR + handoff with explicit GO/NO-GO statement.
+3. **Lane 2 hardening (ADR-018):** cursor evolution planning and broader platform hardening after lane closure.
 4. Continue API surface hygiene so deferred project artifacts remain internal-only and non-routable.

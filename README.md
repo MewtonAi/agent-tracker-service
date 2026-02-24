@@ -27,11 +27,11 @@ Current implementation snapshot (inspected 2026-02-24 PST):
 1. Reconcile OpenAPI snapshot with shipped pagination/correlation contract fields (`./gradlew updateOpenApiSnapshot && ./gradlew check`)
 2. Apply release-evidence workflow in PR/handoff artifacts using `docs/release-evidence.md` and `.github/pull_request_template.md`
 3. Finalize ADR/source-of-truth hygiene (canonical references only; superseded ADRs remain historical)
-4. Implement cursor evolution readiness (dual-decode compatibility) under ADR-015 while keeping `limit/cursor/nextCursor` stable
+4. Implement cursor evolution readiness (dual-decode compatibility) under ADR-015 while keeping `limit/cursor/nextCursor` stable; track phase-2 plan in `docs/cursor-evolution-phase2-plan.md`
 
 Gate semantics are codified in `ADR-008-mvp-gate-tightening-for-mcp-transport-and-openapi-drift.md`.
 Migration posture note: idempotency semantics are v2-only in this repo lineage (see ADR-007).
-Canonical contract ADR references are governed by ADR-014 (superseded ADR variants are historical only). Cursor evolution compatibility policy is defined in ADR-015. Release go/no-go evidence requirements are defined in ADR-016, and artifact/template enforcement is defined in ADR-017 (`docs/release-evidence.md`, `.github/pull_request_template.md`).
+Canonical contract ADR references are governed by ADR-014 (superseded ADR variants are historical only). Cursor evolution compatibility policy is defined in ADR-015. Release go/no-go evidence requirements are defined in ADR-016, artifact/template enforcement is defined in ADR-017 (`docs/release-evidence.md`, `.github/pull_request_template.md`), and release-candidate lane sequencing/temporary feature-freeze posture is defined in ADR-018.
 
 ## Local validation
 Run:
