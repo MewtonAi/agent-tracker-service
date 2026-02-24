@@ -22,9 +22,17 @@ Task-first system of record for agent work tracking, exposed via REST and MCP wi
   - in-memory store (default when `task.store` is absent)
   - Mongo store (`task.store=mongo`) with Micronaut Data documents/repositories
   - logging telemetry baseline (`LoggingIdempotencyTelemetry`)
+- **application.contract**:
+  - shared `TaskInputNormalizer` for transport-agnostic input parsing/validation used by REST + MCP adapters and query service
 - **mcp adapter**:
   - `TaskMcpTools` (`createTask`, `getTask`, `listTasks`, `updateTaskStatus`)
   - transport/runtime registration contract tested via HTTP JSON-RPC `initialize` + `tools/list`
+
+## Runtime profile baseline
+- `local`: developer defaults (`task.store=memory`; local Mongo/idempotency overrides via env)
+- `test`: deterministic checks (`task.store=memory`, idempotency TTL = 1h, management endpoints disabled)
+- `prod`: runtime posture (`task.store=mongo`, `MONGODB_URI` required, management endpoints restricted)
+- Detailed key matrix and activation examples: `docs/config-profile-matrix.md`
 
 ## Adapter readiness matrix
 - REST v1: **implemented**

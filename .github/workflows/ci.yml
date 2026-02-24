@@ -20,4 +20,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Verify contracts + parity
+        env:
+          MICRONAUT_ENVIRONMENTS: test
         run: ./gradlew check

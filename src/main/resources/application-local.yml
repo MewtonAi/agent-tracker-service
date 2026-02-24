@@ -1,0 +1,16 @@
+task:
+  store: ${TASK_STORE:memory}
+
+mongodb:
+  uri: ${MONGODB_URI:`mongodb://localhost:27017/agent_tracker`}
+  database: ${MONGODB_DATABASE:agent_tracker}
+
+idempotency:
+  ttl-hours: ${IDEMPOTENCY_TTL_HOURS:48}
+
+micronaut:
+  server:
+    port: ${PORT:8080}
+  mcp:
+    server:
+      transport: ${MCP_TRANSPORT:HTTP}

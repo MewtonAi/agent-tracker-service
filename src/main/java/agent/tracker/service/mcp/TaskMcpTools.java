@@ -3,6 +3,7 @@ package agent.tracker.service.mcp;
 import agent.tracker.service.application.TaskCommandService;
 import agent.tracker.service.application.TaskListPage;
 import agent.tracker.service.application.TaskQueryService;
+import agent.tracker.service.application.contract.TaskInputNormalizer;
 import agent.tracker.service.domain.contract.CreateTaskCommand;
 import agent.tracker.service.domain.contract.UpdateTaskStatusCommand;
 import agent.tracker.service.domain.exception.ConcurrentModificationException;
@@ -10,16 +11,14 @@ import agent.tracker.service.domain.exception.ConflictException;
 import agent.tracker.service.domain.exception.IdempotencyKeyReuseMismatchException;
 import agent.tracker.service.domain.exception.InvalidTaskTransitionException;
 import agent.tracker.service.domain.exception.NotFoundException;
-import agent.tracker.service.domain.model.AuditMetadata;
 import agent.tracker.service.domain.model.AgentRef;
+import agent.tracker.service.domain.model.AuditMetadata;
 import agent.tracker.service.domain.model.Task;
 import agent.tracker.service.domain.model.TaskPriority;
 import agent.tracker.service.domain.model.TaskStatus;
 import agent.tracker.service.domain.model.TaskType;
 import jakarta.inject.Singleton;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 
 @Singleton
@@ -27,10 +26,12 @@ public class TaskMcpTools {
 
     private final TaskCommandService commandService;
     private final TaskQueryService queryService;
+    private final TaskInputNormalizer inputNormalizer;
 
-    public TaskMcpTools(TaskCommandService commandService, TaskQueryService queryService) {
+    public TaskMcpTools(TaskCommandService commandService, TaskQueryService queryService, TaskInputNormalizer inputNormalizer) {
         this.commandService = commandService;
         this.queryService = queryService;
+        this.inputNormalizer = inputNormalizer;
     }
 
     public TaskToolResponse createTask(CreateTaskToolRequest request) {
@@ -41,33 +42,33 @@ public class TaskMcpTools {
             req.taskType(),
             req.priority(),
             req.requestedBy(),
-            requireText(req.idempotencyKey(), "idempotencyKey")
+            inputNormalizer.requireIdempotencyKey(req.idempotencyKey())
         ))));
     }
 
     public TaskToolResponse getTask(GetTaskToolRequest request) {
         GetTaskToolRequest req = requireRequest(request, "getTask");
-        return run(req.correlationId(), () -> toResponse(queryService.getTaskById(requireText(req.taskId(), "taskId"))));
+        return run(req.correlationId(), () -> toResponse(queryService.getTaskById(inputNormalizer.requireText(req.taskId(), "taskId"))));
     }
 
     public ListTasksToolResponse listTasks(ListTasksToolRequest request) {
         ListTasksToolRequest req = requireRequest(request, "listTasks");
         return run(req.correlationId(), () -> {
-            TaskListPage page = queryService.listTasks(parseStatusFilter(req.status()), req.cursor(), req.limit());
-            return new ListTasksToolResponse(
-                page.tasks().stream().map(TaskMcpTools::toResponse).toList(),
-                page.nextCursor()
-            );
+            TaskStatus filter = inputNormalizer.parseStatusFilter(req.status());
+            String cursor = inputNormalizer.normalizeCursor(req.cursor());
+            int limit = inputNormalizer.normalizeLimit(req.limit());
+            TaskListPage page = queryService.listTasks(filter, cursor, limit);
+            return new ListTasksToolResponse(page.tasks().stream().map(TaskMcpTools::toResponse).toList(), page.nextCursor());
         });
     }
 
     public TaskToolResponse updateTaskStatus(UpdateTaskStatusToolRequest request) {
         UpdateTaskStatusToolRequest req = requireRequest(request, "updateTaskStatus");
         return run(req.correlationId(), () -> toResponse(commandService.updateTaskStatus(new UpdateTaskStatusCommand(
-            requireText(req.taskId(), "taskId"),
+            inputNormalizer.requireText(req.taskId(), "taskId"),
             req.status(),
             req.requestedBy(),
-            requireText(req.idempotencyKey(), "idempotencyKey")
+            inputNormalizer.requireIdempotencyKey(req.idempotencyKey())
         ))));
     }
 
@@ -105,30 +106,11 @@ public class TaskMcpTools {
         );
     }
 
-    private static TaskStatus parseStatusFilter(String status) {
-        if (status == null || status.isBlank()) {
-            return null;
-        }
-        try {
-            return TaskStatus.valueOf(status.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException exception) {
-            String allowed = Arrays.stream(TaskStatus.values()).map(Enum::name).sorted().reduce((left, right) -> left + ", " + right).orElse("");
-            throw new IllegalArgumentException("status must be one of [" + allowed + "]");
-        }
-    }
-
     private static <T> T requireRequest(T request, String toolName) {
         if (request == null) {
             throw new IllegalArgumentException(toolName + " request must not be null");
         }
         return request;
-    }
-
-    private static String requireText(String value, String field) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(field + " must not be blank");
-        }
-        return value.trim();
     }
 
     private static String resolveCorrelationId(String requestedCorrelationId) {

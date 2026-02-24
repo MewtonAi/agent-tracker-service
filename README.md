@@ -34,6 +34,20 @@ Gate semantics are codified in `ADR-008-mvp-gate-tightening-for-mcp-transport-an
 Migration posture note: idempotency semantics are v2-only in this repo lineage (see ADR-007).
 Canonical contract ADR references are governed by ADR-014 (superseded ADR variants are historical only). Cursor evolution compatibility policy is defined in ADR-015. Release go/no-go evidence requirements are defined in ADR-016, artifact/template enforcement is defined in ADR-017 (`docs/release-evidence.md`, `.github/pull_request_template.md`), release-candidate lane sequencing/temporary feature-freeze posture is defined in ADR-018, evidence provenance/freshness policy is defined in ADR-019, documentation contract-coverage policy is defined in ADR-020, Java-21 preflight/verification-source policy is defined in ADR-021, minimum release test-signal declaration policy is defined in ADR-022, and normalized signal-status/NO-GO default policy is defined in ADR-023. Sequenced execution guidance lives in `docs/rest-mcp-readiness-roadmap.md`.
 
+## Runtime profiles
+Baseline profiles are defined in:
+- `src/main/resources/application-local.yml`
+- `src/main/resources/application-test.yml`
+- `src/main/resources/application-prod.yml`
+- matrix doc: `docs/config-profile-matrix.md`
+
+Activation examples:
+```bash
+MICRONAUT_ENVIRONMENTS=local ./gradlew run
+MICRONAUT_ENVIRONMENTS=test ./gradlew check
+MICRONAUT_ENVIRONMENTS=prod java -jar build/libs/agent-tracker-service-*.jar
+```
+
 ## Local validation
 Preflight:
 ```bash

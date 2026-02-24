@@ -1,0 +1,19 @@
+task:
+  store: memory
+
+mongodb:
+  uri: mongodb://localhost:27017/agent_tracker_test
+  database: agent_tracker_test
+
+idempotency:
+  ttl-hours: 1
+
+micronaut:
+  server:
+    port: -1
+    endpoints:
+      all:
+        enabled: false
+  mcp:
+    server:
+      transport: HTTP
