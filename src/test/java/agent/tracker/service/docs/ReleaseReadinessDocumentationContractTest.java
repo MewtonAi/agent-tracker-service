@@ -25,7 +25,8 @@ class ReleaseReadinessDocumentationContractTest {
         "ADR-017-release-evidence-artifact-and-pr-template-policy.md",
         "ADR-018-release-candidate-readiness-lanes-and-feature-freeze-policy.md",
         "ADR-019-release-evidence-provenance-and-freshness-policy.md",
-        "ADR-020-release-contract-documentation-coverage-policy.md"
+        "ADR-020-release-contract-documentation-coverage-policy.md",
+        "ADR-021-java21-toolchain-readiness-and-verification-provenance-ladder.md"
     );
 
     private static final List<String> SUPERSEDED_ADRS = List.of(
@@ -61,11 +62,13 @@ class ReleaseReadinessDocumentationContractTest {
         assertTrue(readme.contains("ADR-018"));
         assertTrue(readme.contains("ADR-019"));
         assertTrue(readme.contains("ADR-020"));
+        assertTrue(readme.contains("ADR-021"));
 
-        assertTrue(productBacklog.contains("ADR-012/013/014/015/016/017/018/019/020"));
+        assertTrue(productBacklog.contains("ADR-012/013/014/015/016/017/018/019/020/021"));
         assertTrue(roadmap.contains("ADR-018"));
         assertTrue(roadmap.contains("ADR-019"));
         assertTrue(roadmap.contains("ADR-020"));
+        assertTrue(roadmap.contains("ADR-021"));
 
         assertFalse(productBacklog.contains("ADR-012-mcp-correlation-id-precedence-and-fallback.md"));
         assertFalse(productBacklog.contains("ADR-013-task-list-pagination-contract-v1-offset-cursor.md"));
@@ -82,6 +85,9 @@ class ReleaseReadinessDocumentationContractTest {
         assertTrue(evidenceTemplate.contains("ADR-017-release-evidence-artifact-and-pr-template-policy.md"));
         assertTrue(evidenceTemplate.contains("ADR-019-release-evidence-provenance-and-freshness-policy.md"));
         assertTrue(evidenceTemplate.contains("ADR-020-release-contract-documentation-coverage-policy.md"));
+        assertTrue(evidenceTemplate.contains("ADR-021-java21-toolchain-readiness-and-verification-provenance-ladder.md"));
+        assertTrue(evidenceTemplate.contains("java -version"));
+        assertTrue(evidenceTemplate.contains("JAVA_HOME"));
         assertTrue(evidenceTemplate.contains("<=24h"));
 
         assertTrue(prTemplate.contains("docs/release-evidence.md"));
@@ -90,6 +96,9 @@ class ReleaseReadinessDocumentationContractTest {
         assertTrue(prTemplate.contains("ADR-018"));
         assertTrue(prTemplate.contains("ADR-019"));
         assertTrue(prTemplate.contains("ADR-020"));
+        assertTrue(prTemplate.contains("ADR-021"));
+        assertTrue(prTemplate.contains("java -version"));
+        assertTrue(prTemplate.contains("JAVA_HOME"));
         assertTrue(prTemplate.contains("<=24h"));
     }
 

@@ -7,9 +7,40 @@ paths:
   /v1/tasks:
     get:
       summary: List tasks
+      parameters:
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: cursor
+          required: false
+          description: Offset cursor token. Supports plain `<n>` or compatibility token `o:<n>`.
+          schema:
+            type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
       responses:
         "200":
           description: Task list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      type: object
+                  nextCursor:
+                    type: string
+                    nullable: true
     post:
       summary: Create task
       parameters:

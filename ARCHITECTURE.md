@@ -1,6 +1,6 @@
 # Agent Tracker Service Architecture (v1)
 
-Last updated: 2026-02-24 (PST, readiness-lanes refresh)
+Last updated: 2026-02-24 (PST, readiness-lanes + Java21 provenance ladder refresh)
 
 ## Purpose
 Task-first system of record for agent work tracking, exposed via REST and MCP with shared business semantics.
@@ -64,6 +64,7 @@ MCP correlation policy (`ADR-012-mcp-correlation-id-canonicalization-policy.md`)
 - Release-candidate sequencing and temporary feature-freeze posture follow `ADR-018-release-candidate-readiness-lanes-and-feature-freeze-policy.md`.
 - Release evidence provenance + freshness requirements follow `ADR-019-release-evidence-provenance-and-freshness-policy.md` (source declaration, head-SHA parity, <=24h freshness window).
 - Release-policy documentation contract coverage follows `ADR-020-release-contract-documentation-coverage-policy.md` (canonical ADR-set checks extend to planning + evidence artifacts).
+- Java 21 verification provenance-ladder policy follows `ADR-021-java21-toolchain-readiness-and-verification-provenance-ladder.md` (local-preferred, CI fallback, mandatory preflight declaration in evidence artifacts).
 
 ## Mongo implementation status
 Implemented:

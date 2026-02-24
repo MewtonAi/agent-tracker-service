@@ -2,13 +2,15 @@
 - 
 
 ## Release Evidence Bundle (required for release candidates)
-Source of truth: `docs/release-evidence.md` (ADR-016 / ADR-017 / ADR-019 / ADR-020)
+Source of truth: `docs/release-evidence.md` (ADR-016 / ADR-017 / ADR-019 / ADR-020 / ADR-021)
 
 ### 1) CI gate evidence
 - [ ] `./gradlew check` passed on JDK 21
 - [ ] CI run URL:
 - [ ] Commit SHA:
-- [ ] Evidence source declared (CI / Java-enabled workstation)
+- [ ] Evidence source declared (`local-java21` / `ci-java21`)
+- [ ] Java preflight (`java -version`) captured
+- [ ] `JAVA_HOME` status captured
 
 ### 2) OpenAPI snapshot evidence
 - [ ] `verifyOpenApiSnapshot` passed
@@ -21,7 +23,7 @@ Source of truth: `docs/release-evidence.md` (ADR-016 / ADR-017 / ADR-019 / ADR-0
 - [ ] Coverage notes:
 
 ### 4) Canonical ADR evidence
-- Canonical ADR set used: ADR-012/013/014/015/016/017/018/019/020
+- Canonical ADR set used: ADR-012/013/014/015/016/017/018/019/020/021
 - [ ] Active policy references limited to canonical ADR set above
 - [ ] No superseded ADR cited as active contract
 

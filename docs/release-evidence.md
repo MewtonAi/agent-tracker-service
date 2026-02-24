@@ -1,4 +1,4 @@
-# Release Evidence Bundle (ADR-016 / ADR-017 / ADR-019 / ADR-020)
+# Release Evidence Bundle (ADR-016 / ADR-017 / ADR-019 / ADR-020 / ADR-021)
 
 Use this checklist for any PR that claims REST + MCP release readiness.
 
@@ -6,7 +6,9 @@ Use this checklist for any PR that claims REST + MCP release readiness.
 - [ ] `./gradlew check` passed on **JDK 21**
 - [ ] CI run URL:
 - [ ] Commit SHA validated in CI:
-- [ ] Evidence source declared (CI / Java-enabled workstation):
+- [ ] Evidence source declared (`local-java21` / `ci-java21`):
+- [ ] Java preflight recorded (`java -version`):
+- [ ] `JAVA_HOME` status recorded (set/unset):
 
 ## 2) OpenAPI snapshot evidence (required)
 - [ ] `verifyOpenApiSnapshot` passed
@@ -30,10 +32,12 @@ Reference active contracts only:
 - [ ] `ADR-018-release-candidate-readiness-lanes-and-feature-freeze-policy.md`
 - [ ] `ADR-019-release-evidence-provenance-and-freshness-policy.md`
 - [ ] `ADR-020-release-contract-documentation-coverage-policy.md`
+- [ ] `ADR-021-java21-toolchain-readiness-and-verification-provenance-ladder.md`
 
 ## 5) Environment constraints
 - [ ] Local/runtime limitation recorded (or mark none)
-- [ ] If constrained, evidence source declared (CI run or Java-enabled workstation)
+- [ ] If constrained, CI fallback source is declared and linked
+- [ ] ADR-021 provenance-ladder path is explicitly stated
 
 ## 6) Handoff + decision consistency
 - [ ] Handoff note includes the same evidence headings and outcomes

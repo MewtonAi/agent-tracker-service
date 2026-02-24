@@ -1,6 +1,6 @@
 # PRODUCT_OWNER_NEXT.md
 
-Last updated: 2026-02-24 (PST, product/architecture backlog refinement + ADR-020 docs-contract coverage)
+Last updated: 2026-02-24 (PST, product/architecture backlog refinement + ADR-021 Java21 provenance ladder)
 Owner: Product/Architecture
 
 ## 1) Current inspection snapshot (this pass)
@@ -8,30 +8,30 @@ Owner: Product/Architecture
 ### Code + tests + docs
 - ✅ REST/MCP parity posture remains anchored in shared application services and parity contract tests.
 - ✅ Mongo idempotency replay handling includes stale-reference fail-soft behavior with integration coverage.
-- ✅ Release-readiness documentation contract test now expanded to enforce canonical release ADR coverage through ADR-020.
+- ✅ Release-readiness documentation contract test enforces canonical release ADR coverage through ADR-021, including Java-preflight evidence fields.
 - ✅ CI workflow remains minimal and release-relevant (`.github/workflows/ci.yml`: JDK 21 + `./gradlew check`).
 - ✅ Release lane sequencing, evidence provenance/freshness, and docs-governance policies are explicitly documented (ADR-018/019/020).
+- ✅ Cursor compatibility hardening now includes Mongo integration coverage for offset-token forms (`o:<n>`, `O: <n>`) and unsupported-prefix rejection.
+- ✅ OpenAPI snapshot markers now explicitly include pagination query parameters and `nextCursor` response field pending Java-21 generated reconciliation.
 
 ### Runtime verification
 - ⚠️ Local verification blocked in this shell: Java runtime unavailable (`JAVA_HOME`/`java` missing).
 - ⚠️ OpenAPI snapshot freshness + final gate status remain CI/Java-enabled-workstation verifiable only.
 
 ### Delta introduced in this pass
-- Added ADR-020 for release-contract documentation coverage policy.
-- Upgraded `ReleaseReadinessDocumentationContractTest` to include:
-  - canonical ADR list through ADR-020,
-  - planning artifact checks,
-  - ADR-019 provenance/freshness assertions.
-- Refined roadmap/backlog/handoff language to include ADR-020 governance.
+- Added ADR-021 for Java 21 toolchain readiness and verification provenance ladder policy.
+- Tightened release-planning artifacts to require explicit Java preflight declaration (`java -version`, `JAVA_HOME`, evidence source).
+- Refined roadmap/backlog/handoff language so lane closure explicitly includes toolchain unblock path before OpenAPI/CI reconciliation.
 
 ---
 
 ## 2) Prioritized roadmap (release confidence first)
 
 ### P1 — Lane closure for release candidate
-1. **TKT-P1-G15 — OpenAPI snapshot reconciliation + CI green evidence**
-2. **TKT-P1-G19 — Evidence provenance/freshness enforcement rollout (ADR-019)**
-3. **TKT-P1-G17 — Canonical ADR reference hygiene final sweep (through ADR-020)**
+1. **TKT-P1-G21 — Java 21 toolchain preflight + verification source declaration (ADR-021)**
+2. **TKT-P1-G15 — OpenAPI snapshot reconciliation + CI green evidence**
+3. **TKT-P1-G19 — Evidence provenance/freshness enforcement rollout (ADR-019 + ADR-021)**
+4. **TKT-P1-G17 — Canonical ADR reference hygiene final sweep (through ADR-021)**
 
 ### P2 — Post-lane hardening (after P1 complete)
 4. **TKT-P2-A18 — Cursor phase-2 (seek token) readiness and parity expansion**
@@ -41,6 +41,21 @@ Owner: Product/Architecture
 ---
 
 ## 3) Implementation-ready tickets
+
+### TKT-P1-G21 — Java 21 toolchain preflight + verification source declaration
+**Goal**: remove execution ambiguity before release-lane verification.
+
+**Scope**
+- Record Java preflight in release artifacts:
+  - `java -version` outcome
+  - `JAVA_HOME` presence/absence
+  - declared evidence source (`local-java21` or `ci-java21`)
+- If local Java 21 unavailable, explicitly route verification to CI and mark local constraint.
+
+**Acceptance criteria**
+- `docs/release-evidence.md` and PR template include Java preflight fields.
+- Handoff note explicitly states verification source and any local limitation.
+- No GO statement is issued without preflight declaration.
 
 ### TKT-P1-G15 — OpenAPI snapshot reconciliation + CI green evidence
 **Goal**: eliminate contract drift risk before GO/NO-GO.
@@ -59,7 +74,7 @@ Owner: Product/Architecture
 - Evidence captures CI URL + SHA + OpenAPI diff outcome.
 
 ### TKT-P1-G19 — Evidence provenance/freshness enforcement rollout
-**Goal**: make GO/NO-GO decisions auditable and time-bounded.
+**Goal**: make GO/NO-GO decisions auditable, time-bounded, and source-explicit.
 
 **Scope**
 - Complete PR template + release evidence fields for ADR-019:
@@ -69,9 +84,9 @@ Owner: Product/Architecture
 - Ensure handoff notes include explicit provenance statement.
 
 **Acceptance criteria**
-- PR template contains provenance + freshness checklist items.
-- `docs/release-evidence.md` includes <=24h freshness gate and owner override note.
-- Handoff references ADR-019 and records evidence origin.
+- PR template contains provenance + freshness checklist items plus Java preflight fields.
+- `docs/release-evidence.md` includes <=24h freshness gate, preflight declaration, and owner override note.
+- Handoff references ADR-019/021 and records evidence origin.
 
 ### TKT-P1-G17 — Canonical ADR reference hygiene final sweep
 **Goal**: preserve single-source policy references and keep doc tests authoritative.
@@ -84,7 +99,7 @@ Owner: Product/Architecture
 **Acceptance criteria**
 - README/ARCHITECTURE/HANDOFF/PRODUCT/ROADMAP are mutually consistent.
 - No active policy statement points to superseded ADR files.
-- Canonical set references include ADR-020 where release-policy ADRs are listed.
+- Canonical set references include ADR-021 where release-policy ADRs are listed.
 
 ### TKT-P2-A18 — Cursor phase-2 readiness
 **Goal**: phase seek-token evolution without wire-contract changes.
@@ -102,19 +117,21 @@ Owner: Product/Architecture
 ---
 
 ## 4) Execution order for next coding slice
-1. TKT-P1-G15 (run + reconcile + commit snapshot if needed)
-2. TKT-P1-G19 (fill provenance/freshness evidence fields)
-3. TKT-P1-G17 (final documentation hygiene sweep)
-4. TKT-P2-A18 (only after Lane 1 closure)
+1. TKT-P1-G21 (declare Java preflight + verification source)
+2. TKT-P1-G15 (run + reconcile + commit snapshot if needed)
+3. TKT-P1-G19 (fill provenance/freshness evidence fields)
+4. TKT-P1-G17 (final documentation hygiene sweep)
+5. TKT-P2-A18 (only after Lane 1 closure)
 
 ## 5) Risk register (live)
 - **R1 OpenAPI drift unknown** until Java-21 execution evidence exists.
 - **R2 Evidence staleness risk** if CI result is not tied to PR head SHA and fresh timestamp.
 - **R3 Policy drift risk** if release-policy ADR additions are not synchronized with docs contract tests (ADR-020).
 - **R4 Premature scope expansion risk** if ADR-018 lane/feature-freeze is bypassed.
+- **R5 Toolchain ambiguity risk** if Java preflight/source declaration is omitted from evidence artifacts (ADR-021).
 
 ## 6) Canonical references for active release work
-- ADR-012/013/014/015/016/017/018/019/020
+- ADR-012/013/014/015/016/017/018/019/020/021
 - `docs/release-evidence.md`
 - `.github/pull_request_template.md`
 - `docs/rest-mcp-readiness-roadmap.md`

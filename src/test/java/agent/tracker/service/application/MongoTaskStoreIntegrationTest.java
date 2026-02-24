@@ -177,5 +177,16 @@ class MongoTaskStoreIntegrationTest {
         TaskListPage second = queryService.listTasks(null, first.nextCursor(), 2);
         assertEquals(1, second.tasks().size());
         assertNull(second.nextCursor());
+
+        TaskListPage secondWithOffsetToken = queryService.listTasks(null, "o:" + first.nextCursor(), 2);
+        assertEquals(second.tasks().stream().map(Task::getTaskId).toList(), secondWithOffsetToken.tasks().stream().map(Task::getTaskId).toList());
+
+        TaskListPage secondWithUppercaseOffsetToken = queryService.listTasks(null, "O: " + first.nextCursor(), 2);
+        assertEquals(second.tasks().stream().map(Task::getTaskId).toList(), secondWithUppercaseOffsetToken.tasks().stream().map(Task::getTaskId).toList());
+    }
+
+    @Test
+    void shouldRejectUnsupportedCursorPrefixOnMongoStorePath() {
+        assertThrows(IllegalArgumentException.class, () -> queryService.listTasks(null, "s:1", 20));
     }
 }
