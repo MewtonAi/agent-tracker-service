@@ -1,3 +1,13 @@
+## Agent Tracker Service (MVP)
+
+Implemented in this iteration:
+- REST task lifecycle endpoints (`/v1/tasks`)
+- In-memory task lifecycle service with status transition policy
+- Structured API error responses for 400/404/409 scenarios
+- Unit + integration tests for lifecycle and controller behavior
+
+> Note: persistence is currently in-memory; Mongo adapters are planned as next step.
+
 ## Micronaut 4.10.8 Documentation
 
 - [User Guide](https://docs.micronaut.io/4.10.8/guide/index.html)
