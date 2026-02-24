@@ -20,9 +20,11 @@ Current implementation snapshot:
 - Mongo idempotency TTL retention is configurable via `idempotency.ttl-hours` / `IDEMPOTENCY_TTL_HOURS` (default 48h)
 
 ## Next priorities
-1. MCP transport-level registration verification + CI parity gate for REST/MCP scenarios
+1. CI-enforced REST/MCP parity gate + MCP runtime registration/schema verification
 2. OpenAPI generation/check-in + CI contract drift gate
-3. Idempotency replay observability (`first_write`, `replay_hit`, `mismatch_reject`) and migration cleanup notes
+3. Idempotency replay observability (`first_write`, `replay_hit`, `mismatch_reject`)
+
+Migration posture note: idempotency semantics are v2-only in this repo lineage (see ADR-007).
 
 ## Local validation
 Run:

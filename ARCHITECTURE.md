@@ -56,6 +56,7 @@ Implemented:
   - `idempotency_records`: unique `{ operation: 1, key: 1 }`
   - `idempotency_records`: TTL on `expiresAt`
 - idempotency TTL retention configurable (`idempotency.ttl-hours`, default 48h)
+- migration posture: v2-only idempotency semantics; no legacy key-only replay fallback in current repo lineage (ADR-007)
 
 Remaining MVP-critical gaps:
 - MCP parity CI gate + transport-level verification not yet wired
@@ -65,4 +66,4 @@ Remaining MVP-critical gaps:
 ## Current architectural focus (next)
 1. Deliver MCP tool surface through shared services only.
 2. Add parity and contract-governance gates in CI (REST↔MCP scenarios + OpenAPI drift check).
-3. Add idempotency replay observability and explicit legacy-migration note/decision log.
+3. Add idempotency replay observability and keep ADR-007 v2-only posture enforced via tests/docs.

@@ -37,6 +37,7 @@ Owner: Product/Architecture
 ### EPIC P0-A: MCP delivery + semantic parity (highest impact)
 1. ✅ **TKT-P0-A1 — Implement 4 MCP tools via shared services**
 2. 🟡 **TKT-P0-A2 — REST/MCP parity scenario suite in CI** (baseline scenarios implemented; CI gate still pending)
+3. **TKT-P0-A3 — MCP runtime registration/schema verification**
 
 ### EPIC P0-B: Contract governance
 3. **TKT-P0-B1 — OpenAPI generation + snapshot + drift gate**
@@ -44,7 +45,7 @@ Owner: Product/Architecture
 
 ### EPIC P0-C: Idempotency operations readiness
 5. **TKT-P0-C1 — Idempotency replay observability**
-6. **TKT-P0-C2 — Migration decision log: confirm whether legacy fallback is required; if not, document v2-only posture explicitly**
+6. ✅ **TKT-P0-C2 — Migration decision log completed (ADR-007): v2-only posture, no legacy fallback**
 
 ## P1 — Post-MVP hardening
 - Cursor pagination for list API
@@ -81,6 +82,16 @@ Owner: Product/Architecture
 - Equivalent error category/code across adapters.
 - CI job fails on parity drift.
 
+### TKT-P0-A3 — MCP runtime registration/schema verification
+**Scope**
+- Verify tool registration and request schema exposure in an actual MCP runtime session.
+- Capture a reproducible smoke check (local command + expected tool inventory).
+
+**Acceptance criteria**
+- Runtime reports all 4 task tools discoverable.
+- Required input fields align with current request records (`idempotencyKey`, `taskId`, etc.).
+- Smoke check is documented and executable by any developer.
+
 ### TKT-P0-B1 — OpenAPI contract lock
 **Scope**
 - Generate and check in `openapi.yaml`; enforce snapshot drift gate in CI.
@@ -107,22 +118,25 @@ Owner: Product/Architecture
 - Metric/log dimensions include operation name.
 - Replay/mismatch integration tests assert signal emission (or equivalent hook).
 
-### TKT-P0-C2 — Legacy migration decision record
-**Scope**
-- Decide and document whether legacy key-only fallback exists/needed for this repo lineage.
+### TKT-P0-C2 — Legacy migration decision record ✅ Done
+**Status**
+- Completed via ADR-007 (`idempotency-v2-only-posture`).
 
-**Acceptance criteria**
-- ADR/architecture note explicitly states migration posture.
-- If fallback required, grace window + removal criterion defined.
-- If not required, fallback path is prohibited by tests/docs.
+**Implemented decision**
+- Repository posture is explicitly v2-only (`operation`, `key`, `payloadHash`, `expiresAt`) with no legacy key-only replay fallback.
+
+**Follow-on enforcement (remaining hardening)**
+- Add a targeted test/doc check that fails if fallback semantics are reintroduced without ADR.
 
 ---
 
 ## 4) Recommended execution order (next 2 slices)
 
-**Slice 1 (MVP unlock):** TKT-P0-A1, TKT-P0-A2
+**Slice 1 (MVP unlock):** TKT-P0-A2, TKT-P0-A3
 
-**Slice 2 (contract + ops hardening):** TKT-P0-B1, TKT-P0-B2, TKT-P0-C1, TKT-P0-C2
+**Slice 2 (contract + ops hardening):** TKT-P0-B1, TKT-P0-B2, TKT-P0-C1
+
+**Already completed decision work:** TKT-P0-C2 (ADR-007)
 
 ---
 

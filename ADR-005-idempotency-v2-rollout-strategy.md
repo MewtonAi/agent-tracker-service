@@ -1,9 +1,9 @@
 # ADR-005: Idempotency v2 Rollout Strategy (Mongo)
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-007
 - **Date:** 2026-02-24
 - **Deciders:** product/architecture
-- **Related:** `ADR-003-idempotency-and-concurrency-contract.md`, `ADR-004-idempotency-mismatch-and-conflict-code.md`
+- **Related:** `ADR-003-idempotency-and-concurrency-contract.md`, `ADR-004-idempotency-mismatch-and-conflict-code.md`, `ADR-007-idempotency-v2-only-posture.md`
 
 ## Context
 The codebase currently stores idempotency as a single string key (including encoded operation/task scope), with unique index on `{ key: 1 }` and TTL on `createdAt`.

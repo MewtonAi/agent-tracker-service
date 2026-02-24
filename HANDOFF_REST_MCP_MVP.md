@@ -3,13 +3,15 @@
 Last updated: 2026-02-24 (PST)
 
 ## What was done in this product/architecture pass
-- Re-verified repo state vs architecture/docs after latest idempotency work.
-- Updated ADR-004 to reflect implemented conflict + mismatch contract decisions.
-- Refined architecture and backlog docs to shift priority from idempotency build-out to MCP + parity + contract governance.
-- Produced implementation-ready tickets with acceptance criteria for the next delivery slices.
+- Re-validated code/docs parity for REST + MCP readiness.
+- Added **ADR-007** to lock migration posture: **idempotency is v2-only** (no legacy key-only fallback in this repo lineage).
+- Marked ADR-005 as superseded to avoid roadmap ambiguity.
+- Updated architecture + product backlog to reflect current truth and remaining MVP gates.
 
 ## Current engineering baseline (code reality)
 - REST task endpoints are implemented and stable for core flows.
+- MCP application adapter (`TaskMcpTools`) is implemented for create/get/list/update-status.
+- Baseline REST/MCP parity tests exist (`TaskRestMcpParityTest`) for create, transition, mismatch semantics.
 - Error contract includes stable 409 mappings for:
   - `CONCURRENT_MODIFICATION`
   - `IDEMPOTENCY_KEY_REUSE_MISMATCH`
@@ -17,39 +19,66 @@ Last updated: 2026-02-24 (PST)
   - uniqueness on `(operation,key)`
   - mismatch detection by payload hash
   - TTL index on `expiresAt` with configurable retention
-- MCP tooling/parity/governance are the main remaining MVP gaps.
+- Migration posture is now explicitly documented as v2-only (ADR-007).
 
-## Recommended next coding slice (do next)
+## Remaining MVP release gate (ordered)
 
-### 1) Deliver MCP + parity (highest priority)
-- Implement MCP tools: `create_task`, `get_task`, `list_tasks`, `update_task_status`.
-- Add parity suite that runs same scenarios through REST and MCP.
+### 1) TKT-P0-A2 — Wire parity suite into CI (highest impact)
+**Goal**: parity drift must fail builds.
 
-### 2) Add contract governance
-- Generate + commit `openapi.yaml` snapshot.
-- Add CI drift gate.
-- Add error code lock tests.
+Suggested implementation notes:
+- Ensure parity test class is in the default test task path.
+- Add CI step that executes parity tests on PRs.
+- Treat any REST/MCP semantic mismatch as blocking.
 
-### 3) Add idempotency observability and migration decision record
-- Emit `idempotency.first_write`, `idempotency.replay_hit`, `idempotency.mismatch_reject`.
-- Record explicit decision on legacy fallback posture (required vs disallowed).
+### 2) TKT-P0-A3 — MCP runtime registration/schema verification
+**Goal**: validate transport-level discoverability beyond plain unit/integration invocation.
 
-## Suggested ticket cut
-- **T1:** MCP tool handlers (thin adapters to existing services)
-- **T2:** REST/MCP parity harness + CI job
-- **T3:** OpenAPI snapshot + drift gate
-- **T4:** Error catalog lock tests
-- **T5:** Idempotency replay telemetry
-- **T6:** Migration posture ADR/note + enforcement tests
+Suggested implementation notes:
+- Run service in MCP-capable mode and inspect discovered tools.
+- Verify all 4 tools are present and required params are enforced.
+- Capture command + expected output in README or a dedicated runbook snippet.
 
-## Critical regression scenarios
-- replay: same operation+key+same payload (expect replay)
-- replay: same operation+key+different payload (expect 409 mismatch)
-- concurrent status updates on same task (expect stable conflict code)
-- invalid status filter input (expect stable 400 shape)
-- parity scenario equivalence between REST and MCP adapters
+### 3) TKT-P0-B1 — OpenAPI snapshot + drift gate
+**Goal**: contract changes become explicit review events.
 
-## Notes for implementer
-- Do not add MCP-specific business rules; reuse application services only.
-- Keep public docs/contracts explicit that v1 is task-only.
-- If legacy fallback is intentionally unsupported, lock that with tests/docs so it does not creep back in.
+Suggested implementation notes:
+- Generate and commit `openapi.yaml`.
+- Add CI check to fail on drift unless snapshot is intentionally updated.
+- Ensure error examples include `CONCURRENT_MODIFICATION` and `IDEMPOTENCY_KEY_REUSE_MISMATCH`.
+
+### 4) TKT-P0-B2 — Error code lock tests
+**Goal**: prevent accidental renames of externally visible `code` values.
+
+Suggested implementation notes:
+- Add focused tests over representative REST failure paths.
+- Lock currently documented code set.
+
+### 5) TKT-P0-C1 — Idempotency replay observability
+**Goal**: operations can measure replay quality and key misuse.
+
+Suggested implementation notes:
+- Emit counters/events:
+  - `idempotency.first_write`
+  - `idempotency.replay_hit`
+  - `idempotency.mismatch_reject`
+- Include `operation` dimension.
+
+## Critical regression scenarios to keep green
+- Replay with same operation+key+same payload => replay success
+- Replay with same operation+key+different payload => 409 mismatch
+- Concurrent update race => `CONCURRENT_MODIFICATION`
+- Invalid status filter => stable 400 (`BAD_REQUEST`)
+- REST vs MCP scenario equivalence (state + error code)
+
+## File map for next implementer
+- Parity CI + test evolution: `src/test/java/.../mcp/TaskRestMcpParityTest.java`, CI workflow files
+- MCP runtime verification docs: `README.md` (or dedicated runbook)
+- Contract gate: OpenAPI generation config + committed `openapi.yaml`
+- Error code lock tests: `src/test/java/.../api/*`
+- Observability: `TaskCommandService`, `MongoTaskStore` (and any metrics abstraction added)
+
+## Key guardrails
+- Keep MCP handlers thin; do not duplicate domain/business rules.
+- Preserve task-only v1 surface (project APIs remain deferred).
+- Treat ADR-007 posture as authoritative unless a new ADR says otherwise.
