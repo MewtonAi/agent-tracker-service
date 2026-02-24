@@ -15,6 +15,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TaskQueryServiceTest {
 
@@ -67,9 +68,19 @@ class TaskQueryServiceTest {
         assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, "o:-1", 10));
         assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, "o:abc", 10));
         assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, "o:", 10));
+        assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, "o:  ", 10));
         assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, "s:1", 10));
+        assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, "x:1", 10));
         assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, null, 0));
         assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, null, 201));
+    }
+
+    @Test
+    void shouldExplainSeekCursorPostureUntilPhase2Enablement() {
+        TaskQueryService service = new TaskQueryService(new StubTaskStore(List.of(task("t-1"))));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, "s:42", 10));
+        assertTrue(exception.getMessage().contains("seek cursor tokens are not enabled yet"));
     }
 
     @Test

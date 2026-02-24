@@ -237,4 +237,20 @@ class TaskRestMcpParityTest {
         assertEquals("BAD_REQUEST", restBody.get("code"));
         assertEquals("BAD_REQUEST", mcpException.getCode());
     }
+
+    @Test
+    void shouldMapMalformedOffsetCursorToBadRequestAcrossRestAndMcp() {
+        HttpClientResponseException restException = assertThrows(HttpClientResponseException.class, () ->
+            client.toBlocking().exchange(HttpRequest.GET("/v1/tasks?cursor=o:"), Map.class)
+        );
+
+        McpToolException mcpException = assertThrows(McpToolException.class, () ->
+            mcpTools.listTasks(new TaskMcpTools.ListTasksToolRequest(null, "o:", 20, null))
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, restException.getStatus());
+        Map<?, ?> restBody = restException.getResponse().getBody(Map.class).orElseThrow();
+        assertEquals("BAD_REQUEST", restBody.get("code"));
+        assertEquals("BAD_REQUEST", mcpException.getCode());
+    }
 }

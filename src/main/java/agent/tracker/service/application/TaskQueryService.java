@@ -32,10 +32,10 @@ public class TaskQueryService {
 
     public TaskListPage listTasks(TaskStatus status, String cursor, Integer limit) {
         int resolvedLimit = resolveLimit(limit);
-        int offset = decodeCursor(cursor);
+        int offset = TaskPaginationCursorCodec.decodeOffset(cursor);
 
         TaskStorePage page = store.listTasksPage(status, offset, resolvedLimit);
-        String nextCursor = page.hasMore() ? String.valueOf(safeNextOffset(offset, page.tasks().size())) : null;
+        String nextCursor = page.hasMore() ? TaskPaginationCursorCodec.encodeNextCursor(offset, page.tasks().size()) : null;
         return new TaskListPage(page.tasks(), nextCursor);
     }
 
@@ -47,43 +47,5 @@ public class TaskQueryService {
             throw new IllegalArgumentException("limit must be between 1 and " + MAX_LIMIT);
         }
         return limit;
-    }
-
-    private static int safeNextOffset(int offset, int pageSize) {
-        try {
-            return Math.addExact(offset, pageSize);
-        } catch (ArithmeticException exception) {
-            throw new IllegalArgumentException("cursor is too large to paginate safely");
-        }
-    }
-
-    private static int decodeCursor(String cursor) {
-        if (cursor == null || cursor.isBlank()) {
-            return 0;
-        }
-
-        String normalized = cursor.trim();
-        int separatorIndex = normalized.indexOf(':');
-        if (separatorIndex > 0) {
-            String prefix = normalized.substring(0, separatorIndex).trim();
-            String payload = normalized.substring(separatorIndex + 1).trim();
-            if (!prefix.equalsIgnoreCase("o")) {
-                throw new IllegalArgumentException("cursor prefix is unsupported (allowed: o:<n>)");
-            }
-            if (payload.isBlank()) {
-                throw new IllegalArgumentException("cursor must be a non-negative integer or offset token (o:<n>)");
-            }
-            normalized = payload;
-        }
-
-        try {
-            int value = Integer.parseInt(normalized);
-            if (value < 0) {
-                throw new IllegalArgumentException("cursor must be a non-negative integer or offset token (o:<n>)");
-            }
-            return value;
-        } catch (NumberFormatException exception) {
-            throw new IllegalArgumentException("cursor must be a non-negative integer or offset token (o:<n>)");
-        }
     }
 }

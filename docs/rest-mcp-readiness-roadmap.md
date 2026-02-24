@@ -62,8 +62,8 @@ Owner: Product/Architecture
 ### Slice E — TKT-P2-A18 (post-freeze)
 - Objective: phase-2 cursor evolution readiness.
 - Deliverables:
-  - updated mixed-token parity matrix
-  - rollback owner + switch documented
+  - updated mixed-token parity matrix (`docs/cursor-phase2-readiness.md`)
+  - rollback owner + switch documented (`pagination.cursor.seek.enabled`)
   - no external contract field changes
 - Exit criteria: plan supports seek token rollout with safe rollback.
 
