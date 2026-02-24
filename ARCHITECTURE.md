@@ -12,6 +12,7 @@ Task-first system of record for agent work tracking, exposed via REST and MCP wi
 - REST and MCP adapters share application services (no transport-specific business rules)
 - Optimistic-write conflicts map to stable code: `CONCURRENT_MODIFICATION` (HTTP 409)
 - Idempotency mismatch maps to stable code: `IDEMPOTENCY_KEY_REUSE_MISMATCH` (HTTP 409)
+- List pagination contract is parity-aligned across REST/MCP (`limit`, `cursor`, `nextCursor`) via ADR-013
 
 ## Layered design
 - **api**: REST controllers + global error mapping (RFC7807-style)
@@ -29,7 +30,7 @@ Task-first system of record for agent work tracking, exposed via REST and MCP wi
 - REST v1: **implemented**
   - `POST /v1/tasks` *(Idempotency-Key required)*
   - `GET /v1/tasks/{id}`
-  - `GET /v1/tasks?status=`
+  - `GET /v1/tasks?status=&cursor=&limit=`
   - `PATCH /v1/tasks/{id}/status` *(Idempotency-Key required)*
 - MCP v1 task tools: **implemented and contract-gated**
   - code-level registration/schema checks (`TaskMcpToolRegistrationContractTest`)
@@ -49,9 +50,8 @@ Current mapped codes:
 - `BAD_REQUEST` (400)
 - `INTERNAL_ERROR` (500)
 
-`X-Correlation-Id` is echoed from request or generated when missing.
-Cross-transport posture (ADR-010/ADR-011): MCP tool failures must expose an equivalent `correlationId` token alongside stable `code`.
-Interim source policy is server-generated fallback only for MCP (caller-token propagation is deferred until explicit transport metadata precedence is standardized).
+`X-Correlation-Id` is echoed from REST request header or generated when missing.
+MCP correlation policy (ADR-012): tool-request `correlationId` is propagated when it is a valid UUID; UUID fallback is generated when absent/blank/invalid.
 
 ## Contract governance
 - `verifyOpenApiSnapshot` enforces strict generated-vs-checked-in equality for `openapi/openapi.yaml`.
@@ -63,8 +63,8 @@ Implemented:
 - `TaskDocument` with `@Version` optimistic locking
 - `MongoTaskStore` adapter + repositories
 - startup index initializer creates:
-  - `tasks`: `{ status: 1, updatedAt: -1 }`
-  - `tasks`: `{ updatedAt: -1 }`
+  - `tasks`: `{ status: 1, updatedAt: -1, taskId: -1 }`
+  - `tasks`: `{ updatedAt: -1, taskId: -1 }`
   - `idempotency_records`: unique `{ operation: 1, key: 1 }`
   - `idempotency_records`: TTL on `expiresAt`
 - idempotency TTL retention configurable (`idempotency.ttl-hours`, default 48h)
@@ -72,6 +72,6 @@ Implemented:
 - idempotency observability markers emitted (`idempotency.first_write`, `idempotency.replay_hit`, `idempotency.mismatch_reject`) with operation dimension
 
 ## Active architectural focus (post-MVP)
-1. Add cursor pagination contract for list endpoints/tools while preserving current semantics.
-2. Define MCP caller-supplied correlation propagation semantics (superseding ADR-011 interim policy) and lock with parity tests.
+1. **OpenAPI snapshot reconciliation for newly shipped pagination/correlation fields** (expected drift until Java 21 local regen run).
+2. **Store-level pagination optimization** (move from full-list then slice to DB-backed/seek strategy without contract break).
 3. Continue API surface hygiene so deferred project artifacts remain internal-only and non-routable.

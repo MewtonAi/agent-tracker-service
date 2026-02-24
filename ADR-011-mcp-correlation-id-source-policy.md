@@ -1,6 +1,6 @@
 # ADR-011: MCP Correlation ID Source Policy (Interim)
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-012
 - **Date:** 2026-02-24
 - **Deciders:** product/architecture
 - **Related:** `ADR-010-cross-transport-correlation-id-contract.md`, `ARCHITECTURE.md`, `PRODUCT_OWNER_NEXT.md`

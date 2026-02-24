@@ -24,8 +24,8 @@ Current implementation snapshot:
   - `agent_tracker_idempotency_events_total{event,operation}` where `event ∈ {first_write,replay_hit,mismatch_reject}`
 
 ## Current priorities
-1. Cursor pagination contract for list APIs/tools (REST + MCP parity)
-2. MCP caller-supplied correlation propagation semantics (server-generated fallback already shipped)
+1. Reconcile OpenAPI snapshot with shipped pagination/correlation contract fields (`./gradlew updateOpenApiSnapshot && ./gradlew check`)
+2. Optimize pagination internals (store-level paged reads) while preserving REST+MCP `limit/cursor/nextCursor` behavior
 3. Keep deferred project DTO/contracts internal-only and non-routable
 
 Gate semantics are codified in `ADR-008-mvp-gate-tightening-for-mcp-transport-and-openapi-drift.md`.
