@@ -62,6 +62,7 @@ MCP correlation policy (`ADR-012-mcp-correlation-id-canonicalization-policy.md`)
 - Release go/no-go evidence bundle policy follows `ADR-016-release-readiness-evidence-and-go-no-go-gate.md`.
 - Release evidence artifact location and PR template policy follow `ADR-017-release-evidence-artifact-and-pr-template-policy.md` (`docs/release-evidence.md`, `.github/pull_request_template.md`).
 - Release-candidate sequencing and temporary feature-freeze posture follow `ADR-018-release-candidate-readiness-lanes-and-feature-freeze-policy.md`.
+- Release evidence provenance + freshness requirements follow `ADR-019-release-evidence-provenance-and-freshness-policy.md` (source declaration, head-SHA parity, <=24h freshness window).
 
 ## Mongo implementation status
 Implemented:
@@ -78,6 +79,6 @@ Implemented:
 
 ## Active architectural focus (post-MVP)
 1. **Lane 0 completion (ADR-018):** OpenAPI snapshot reconciliation on Java 21 and CI green evidence.
-2. **Lane 1 completion (ADR-018):** release-evidence closure in PR + handoff with explicit GO/NO-GO statement.
+2. **Lane 1 completion (ADR-018 + ADR-019):** release-evidence closure in PR + handoff with explicit GO/NO-GO statement, provenance source, and freshness validation.
 3. **Lane 2 hardening (ADR-018):** cursor evolution planning and broader platform hardening after lane closure.
 4. Continue API surface hygiene so deferred project artifacts remain internal-only and non-routable.

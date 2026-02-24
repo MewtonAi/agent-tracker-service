@@ -1,6 +1,6 @@
 # Developer Handoff — REST + MCP Readiness
 
-Last updated: 2026-02-24 (PST, product/architecture continuity pass)
+Last updated: 2026-02-24 (PST, product/architecture continuity + ADR-019 pass)
 
 ## What was accomplished in this pass
 - Re-inspected latest code/docs/tests/CI posture for release readiness.

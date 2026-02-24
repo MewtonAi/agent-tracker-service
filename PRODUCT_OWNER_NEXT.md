@@ -1,6 +1,6 @@
 # PRODUCT_OWNER_NEXT.md
 
-Last updated: 2026-02-24 (PST, product/architecture backlog refinement pass)
+Last updated: 2026-02-24 (PST, product/architecture backlog refinement + ADR-019 pass)
 Owner: Product/Architecture
 
 ## 1) Current inspection snapshot (this pass)

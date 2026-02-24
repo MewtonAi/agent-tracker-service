@@ -2,12 +2,13 @@
 - 
 
 ## Release Evidence Bundle (required for release candidates)
-Source of truth: `docs/release-evidence.md` (ADR-016 / ADR-017)
+Source of truth: `docs/release-evidence.md` (ADR-016 / ADR-017 / ADR-019)
 
 ### 1) CI gate evidence
 - [ ] `./gradlew check` passed on JDK 21
 - [ ] CI run URL:
 - [ ] Commit SHA:
+- [ ] Evidence source declared (CI / Java-enabled workstation)
 
 ### 2) OpenAPI snapshot evidence
 - [ ] `verifyOpenApiSnapshot` passed
@@ -20,14 +21,20 @@ Source of truth: `docs/release-evidence.md` (ADR-016 / ADR-017)
 - [ ] Coverage notes:
 
 ### 4) Canonical ADR evidence
-- [ ] Active policy references limited to ADR-012/013/014/015/016/017
+- Canonical ADR set used: ADR-012/013/014/015/016/017/018/019
+- [ ] Active policy references limited to canonical ADR set above
 - [ ] No superseded ADR cited as active contract
 
-### 5) Environment constraints
+### 5) Provenance + freshness checks
+- [ ] Evidence SHA matches PR head SHA
+- [ ] Verification evidence is <=24h old at GO decision time
+- [ ] If older than 24h, verification rerun or explicit NO-GO/exception owner recorded
+
+### 6) Environment constraints
 - [ ] Local/runtime limitation documented (or mark none)
 - [ ] Evidence source declared if constrained (CI or Java-enabled workstation)
 
-### 6) Go/No-Go statement
+### 7) Go/No-Go statement
 - Decision: GO / NO-GO
 - Decision owner:
 - Timestamp (PST):

@@ -6,6 +6,7 @@ Use this checklist for any PR that claims REST + MCP release readiness.
 - [ ] `./gradlew check` passed on **JDK 21**
 - [ ] CI run URL:
 - [ ] Commit SHA validated in CI:
+- [ ] Evidence source declared (CI / Java-enabled workstation):
 
 ## 2) OpenAPI snapshot evidence (required)
 - [ ] `verifyOpenApiSnapshot` passed
@@ -26,6 +27,8 @@ Reference active contracts only:
 - [ ] `ADR-015-cursor-token-evolution-and-backward-compatibility.md`
 - [ ] `ADR-016-release-readiness-evidence-and-go-no-go-gate.md`
 - [ ] `ADR-017-release-evidence-artifact-and-pr-template-policy.md`
+- [ ] `ADR-018-release-candidate-readiness-lanes-and-feature-freeze-policy.md`
+- [ ] `ADR-019-release-evidence-provenance-and-freshness-policy.md`
 
 ## 5) Environment constraints
 - [ ] Local/runtime limitation recorded (or mark none)
@@ -35,3 +38,5 @@ Reference active contracts only:
 - [ ] Handoff note includes the same evidence headings and outcomes
 - [ ] Any unresolved risk/blocker is explicitly listed
 - [ ] Explicit release decision captured: `GO` or `NO-GO` (owner + timestamp)
+- [ ] Decision evidence is fresh (<=24h) at decision time
+- [ ] If freshness exceeded, exception owner + expiry are recorded or decision remains `NO-GO`
