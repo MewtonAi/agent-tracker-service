@@ -18,14 +18,17 @@ Current implementation snapshot:
 - Mongo idempotency v2 baseline: unique `(operation,key)`, payload hash mismatch detection, TTL on `expiresAt`
 - Mismatch contract is enforced as HTTP 409 with `IDEMPOTENCY_KEY_REUSE_MISMATCH`
 - Mongo idempotency TTL retention is configurable via `idempotency.ttl-hours` / `IDEMPOTENCY_TTL_HOURS` (default 48h)
+- MCP runtime transport handshake/discovery is contract-gated (`initialize` + `tools/list`)
+- OpenAPI drift is contract-gated via strict generated-vs-snapshot equality
+- Durable idempotency metrics are exported via Micrometer/Prometheus as:
+  - `agent_tracker_idempotency_events_total{event,operation}` where `event ∈ {first_write,replay_hit,mismatch_reject}`
 
-## Next priorities
-1. MCP runtime wire-level `tools/list` smoke check against live HTTP transport (MVP gate)
-2. Tighten OpenAPI drift gate from marker checks to strict generated-vs-checked-in comparison (MVP gate)
-3. Post-MVP: promote idempotency observability markers to metrics dashboards/alerts
+## Current priorities
+1. Cursor pagination contract for list APIs/tools
+2. Task event timeline/read model
+3. Prune/internalize deferred project DTO/contracts from outward-facing API package
 
 Gate semantics are codified in `ADR-008-mvp-gate-tightening-for-mcp-transport-and-openapi-drift.md`.
-
 Migration posture note: idempotency semantics are v2-only in this repo lineage (see ADR-007).
 
 ## Local validation

@@ -1,51 +1,41 @@
-# Developer Handoff — REST + MCP MVP
+# Developer Handoff — REST + MCP MVP / Post-MVP Plan
 
-Last updated: 2026-02-24 (PST)
+Last updated: 2026-02-24 (PST, late)
 
-## What was done in this developer pass
-- Implemented MCP wire-level transport contract verification in runtime test coverage:
-  - `TaskMcpRuntimeTransportContractTest` now performs HTTP `initialize` then `tools/list` JSON-RPC calls.
-  - Test asserts all 4 task tools are discoverable (`createTask`, `getTask`, `listTasks`, `updateTaskStatus`).
-  - Test asserts schema-critical field markers appear in transport response (`idempotencyKey`, `taskId`).
-- Hardened OpenAPI drift governance from marker-only checks to strict equality gate:
-  - `verifyOpenApiSnapshot` now depends on generated OpenAPI output and fails on any snapshot drift.
-  - Existing required marker assertions are retained for route/error-code guarantees.
-- Updated `README.md` and planning docs to reflect MVP gate completion and post-MVP focus.
+## What changed in this product/architecture pass
+- Refreshed architecture doc to reflect **actual current state** (MCP runtime handshake + strict OpenAPI drift gate are complete, not pending).
+- Refined product roadmap/backlog with prioritized post-MVP epics and implementation-ready tickets:
+  - `TKT-P1-O11` idempotency metrics/alerts hardening (next)
+  - `TKT-P1-A13` cursor pagination parity
+  - `TKT-P1-A14` API package hygiene for deferred project artifacts
+- Added new decision record:
+  - `ADR-009-idempotency-observability-sli-contract.md`
+  - Locks required idempotency counters + SLI formulas (replay ratio, mismatch rate)
+- Updated `README.md` to remove stale “next priorities” that were already completed.
 
 ## Current engineering baseline (code reality)
 - REST task endpoints are implemented and stable for core flows.
-- MCP application adapter (`TaskMcpTools`) is implemented for create/get/list/update-status.
+- MCP adapter (`TaskMcpTools`) is implemented for create/get/list/update-status.
 - REST/MCP parity tests are CI-gated (`TaskRestMcpParityTest`).
-- MCP runtime transport smoke now validates wire handshake + discovery (`TaskMcpRuntimeTransportContractTest`).
-- OpenAPI contract gate now validates generated-vs-checked-in equality (`verifyOpenApiSnapshot`).
+- MCP runtime transport gate verifies HTTP JSON-RPC handshake + `tools/list` discoverability.
+- OpenAPI contract gate validates generated-vs-checked-in equality (`verifyOpenApiSnapshot`).
 - Error contract includes stable 409 mappings for:
   - `CONCURRENT_MODIFICATION`
   - `IDEMPOTENCY_KEY_REUSE_MISMATCH`
-- Mongo idempotency v2 behavior is present:
-  - uniqueness on `(operation,key)`
-  - mismatch detection by payload hash
-  - TTL index on `expiresAt` with configurable retention
-- Migration posture is explicitly v2-only (ADR-007).
-- Idempotency observability markers are emitted:
-  - `idempotency.first_write`
-  - `idempotency.replay_hit`
-  - `idempotency.mismatch_reject`
+- Mongo idempotency v2 behavior is present and documented.
 
-## Remaining work (post-MVP)
+## Recommended next implementation slice
 ### TKT-P1-O11 — Idempotency metrics/alerts hardening
 Definition of done:
-- Counters exported for first-write/replay/mismatch by operation.
-- Dashboard for replay ratio and mismatch rate.
-- Alert thresholds documented.
+- Durable counters emitted for first-write/replay/mismatch by operation.
+- Replay ratio + mismatch rate surfaced in a repo-documented dashboard spec.
+- Alert thresholds + first-response runbook notes documented.
+- Coverage tests prove counter emission paths in create + status update flows.
 
-## Local validation commands
-```bash
-./gradlew check
-./gradlew test --tests "*TaskMcpRuntimeTransportContractTest"
-./gradlew verifyOpenApiSnapshot
-```
+## Validation note
+- Attempted local `./gradlew check` during this pass, but environment lacked Java setup (`JAVA_HOME`/`java` not found).
+- CI remains configured to run `./gradlew check` on push/PR (`.github/workflows/ci.yml`).
 
-## Notes / risks for next implementer
-- MCP transport endpoint path is resolved dynamically in test via router inspection to reduce hardcoding fragility.
-- If Micronaut MCP transport protocol/header names change in dependency upgrades, update the runtime transport test payload/header assumptions accordingly.
-- No functional domain behavior changed in this pass; focus remained on contract/runtime gate hardening.
+## Watch-outs for implementer
+- Preserve ADR-007 posture (idempotency v2-only semantics) unless superseded by ADR.
+- If Micronaut MCP transport conventions change in dependency upgrades, update runtime transport contract test before release.

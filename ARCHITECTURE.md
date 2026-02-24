@@ -3,7 +3,7 @@
 Last updated: 2026-02-24 (PST, late)
 
 ## Purpose
-Task-first system of record for agent work tracking, exposed via REST and prepared for MCP parity.
+Task-first system of record for agent work tracking, exposed via REST and MCP with shared business semantics.
 
 ## Canonical v1 decisions
 - Entity/API scope: **Task only** (Project APIs deferred; project model artifacts may remain internal/non-routable)
@@ -21,6 +21,9 @@ Task-first system of record for agent work tracking, exposed via REST and prepar
   - in-memory store (default when `task.store` is absent)
   - Mongo store (`task.store=mongo`) with Micronaut Data documents/repositories
   - logging telemetry baseline (`LoggingIdempotencyTelemetry`)
+- **mcp adapter**:
+  - `TaskMcpTools` (`createTask`, `getTask`, `listTasks`, `updateTaskStatus`)
+  - transport/runtime registration contract tested via HTTP JSON-RPC `initialize` + `tools/list`
 
 ## Adapter readiness matrix
 - REST v1: **implemented**
@@ -28,10 +31,10 @@ Task-first system of record for agent work tracking, exposed via REST and prepar
   - `GET /v1/tasks/{id}`
   - `GET /v1/tasks?status=`
   - `PATCH /v1/tasks/{id}/status` *(Idempotency-Key required)*
-- MCP v1 tool service surface: **implemented in application adapter** (`TaskMcpTools`)
-  - methods: `createTask`, `getTask`, `listTasks`, `updateTaskStatus`
-  - code-level surface/schema contract tests are in place
-  - runtime transport-level registration/schema verification remains pending
+- MCP v1 task tools: **implemented and contract-gated**
+  - code-level registration/schema checks (`TaskMcpToolRegistrationContractTest`)
+  - runtime transport-wire handshake/discovery checks (`TaskMcpRuntimeTransportContractTest`)
+- REST/MCP parity scenarios: **implemented and CI-gated** (`TaskRestMcpParityTest`)
 
 ## Error contract
 Response body fields: `type`, `title`, `status`, `detail`, `instance`, `code`, `correlationId`.
@@ -48,6 +51,11 @@ Current mapped codes:
 
 `X-Correlation-Id` is echoed from request or generated when missing.
 
+## Contract governance
+- `verifyOpenApiSnapshot` enforces strict generated-vs-checked-in equality for `openapi/openapi.yaml`.
+- Marker assertions remain as an additional guard for critical routes and error codes.
+- CI workflow gate runs `./gradlew check` on push/PR.
+
 ## Mongo implementation status
 Implemented:
 - `TaskDocument` with `@Version` optimistic locking
@@ -58,14 +66,10 @@ Implemented:
   - `idempotency_records`: unique `{ operation: 1, key: 1 }`
   - `idempotency_records`: TTL on `expiresAt`
 - idempotency TTL retention configurable (`idempotency.ttl-hours`, default 48h)
-- migration posture: v2-only idempotency semantics; no legacy key-only replay fallback in current repo lineage (ADR-007)
+- migration posture: v2-only idempotency semantics; no legacy key-only replay fallback (ADR-007)
 - idempotency observability markers emitted (`idempotency.first_write`, `idempotency.replay_hit`, `idempotency.mismatch_reject`) with operation dimension
 
-Remaining MVP-critical gaps:
-- MCP runtime registration/schema verification is context-level only; transport-wire `tools/list` handshake gate is still missing
-- OpenAPI governance currently validates required markers in committed snapshot but does not yet enforce generated-vs-snapshot equality
-
-## Current architectural focus (next)
-1. Close MCP runtime verification to transport-wire parity (`tools/list` discoverability + required fields).
-2. Harden OpenAPI governance to deterministic generated-vs-checked-in diff enforcement.
-3. Post-MVP: promote idempotency markers to metrics dashboards/alerts.
+## Active architectural focus (post-MVP)
+1. Promote idempotency markers to durable metrics + alerting policy.
+2. Add cursor pagination contract for list endpoints/tools while preserving current semantics.
+3. Remove or internalize deferred project DTO/contracts to reduce API surface ambiguity.
