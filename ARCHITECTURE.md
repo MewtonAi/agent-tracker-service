@@ -1,6 +1,6 @@
 # Agent Tracker Service Architecture (v1)
 
-Last updated: 2026-02-24 (PST, late)
+Last updated: 2026-02-24 (PST, late-night refresh)
 
 ## Purpose
 Task-first system of record for agent work tracking, exposed via REST and MCP with shared business semantics.
@@ -50,6 +50,7 @@ Current mapped codes:
 - `INTERNAL_ERROR` (500)
 
 `X-Correlation-Id` is echoed from request or generated when missing.
+Cross-transport posture (ADR-010): MCP tool failures must expose an equivalent `correlationId` token alongside stable `code`.
 
 ## Contract governance
 - `verifyOpenApiSnapshot` enforces strict generated-vs-checked-in equality for `openapi/openapi.yaml`.
@@ -70,6 +71,6 @@ Implemented:
 - idempotency observability markers emitted (`idempotency.first_write`, `idempotency.replay_hit`, `idempotency.mismatch_reject`) with operation dimension
 
 ## Active architectural focus (post-MVP)
-1. Promote idempotency markers to durable metrics + alerting policy.
+1. Implement cross-transport correlation ID propagation contract tests and MCP error payload shaping (ADR-010).
 2. Add cursor pagination contract for list endpoints/tools while preserving current semantics.
 3. Remove or internalize deferred project DTO/contracts to reduce API surface ambiguity.

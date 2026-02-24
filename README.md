@@ -24,8 +24,8 @@ Current implementation snapshot:
   - `agent_tracker_idempotency_events_total{event,operation}` where `event ∈ {first_write,replay_hit,mismatch_reject}`
 
 ## Current priorities
-1. Cursor pagination contract for list APIs/tools
-2. Task event timeline/read model
+1. Cross-transport correlation ID contract parity for REST + MCP error paths
+2. Cursor pagination contract for list APIs/tools
 3. Prune/internalize deferred project DTO/contracts from outward-facing API package
 
 Gate semantics are codified in `ADR-008-mvp-gate-tightening-for-mcp-transport-and-openapi-drift.md`.
