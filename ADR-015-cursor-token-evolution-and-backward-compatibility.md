@@ -12,9 +12,10 @@ Pagination currently uses an opaque `cursor` field while the concrete MVP token 
 1. Cursor input remains externally opaque and must continue using the same request/response field names (`cursor`, `nextCursor`).
 2. Decoding accepts both:
    - legacy offset token: `<n>`
-   - prefixed offset token for forward compatibility: `o:<n>`
+   - prefixed offset token for forward compatibility: `o:<n>` (case-insensitive prefix; surrounding whitespace tolerated)
 3. Validation guarantees remain unchanged:
    - non-numeric/negative values are rejected as bad request.
+   - unknown prefixed token families (for example `s:<n>`) are rejected as bad request until explicitly introduced by a future ADR.
 4. Emitted `nextCursor` remains legacy numeric offset in v1 for maximal compatibility.
 
 ## Consequences

@@ -136,3 +136,5 @@ Design implementation slice for eventual seek-token emission while preserving cu
 - Updated architecture doc to include ADR-016 governance and focus area.
 - Re-prioritized backlog to insert release-evidence wiring directly after OpenAPI reconciliation.
 - Refreshed ticket acceptance criteria to be implementation-ready for next coding slice.
+- Hardened cursor token decode reliability (`<n>` + `o:<n>`) with explicit unsupported-prefix rejection and whitespace/case tolerance.
+- Extended cursor compatibility coverage across application, REST controller, and REST/MCP parity tests.

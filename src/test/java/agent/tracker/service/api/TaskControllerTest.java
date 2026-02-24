@@ -123,12 +123,26 @@ class TaskControllerTest {
 
         ListTasksResponse page2 = client.toBlocking().retrieve(HttpRequest.GET("/v1/tasks?limit=2&cursor=" + page1.nextCursor()), ListTasksResponse.class);
         assertTrue(page2.tasks().size() >= 1);
+
+        ListTasksResponse page2WithPrefixedCursor = client.toBlocking().retrieve(HttpRequest.GET("/v1/tasks?limit=2&cursor=O:%20" + page1.nextCursor()), ListTasksResponse.class);
+        assertEquals(page2.tasks().size(), page2WithPrefixedCursor.tasks().size());
     }
 
     @Test
     void shouldReturnBadRequestForInvalidStatusFilter() {
         HttpClientResponseException exception = assertThrows(HttpClientResponseException.class, () ->
             client.toBlocking().exchange(HttpRequest.GET("/v1/tasks?status=wat"), Map.class)
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        Map<?, ?> body = exception.getResponse().getBody(Map.class).orElseThrow();
+        assertEquals("BAD_REQUEST", body.get("code"));
+    }
+
+    @Test
+    void shouldReturnBadRequestForUnsupportedCursorPrefix() {
+        HttpClientResponseException exception = assertThrows(HttpClientResponseException.class, () ->
+            client.toBlocking().exchange(HttpRequest.GET("/v1/tasks?cursor=s:1"), Map.class)
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());

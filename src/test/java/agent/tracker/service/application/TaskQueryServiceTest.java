@@ -50,8 +50,11 @@ class TaskQueryServiceTest {
         TaskQueryService service = new TaskQueryService(store);
 
         service.listTasks(null, "o:2", 1);
-
         assertEquals(2, store.lastOffset);
+        assertEquals(1, store.lastLimit);
+
+        service.listTasks(null, "O: 1", 1);
+        assertEquals(1, store.lastOffset);
         assertEquals(1, store.lastLimit);
     }
 
@@ -63,6 +66,8 @@ class TaskQueryServiceTest {
         assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, "abc", 10));
         assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, "o:-1", 10));
         assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, "o:abc", 10));
+        assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, "o:", 10));
+        assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, "s:1", 10));
         assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, null, 0));
         assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, null, 201));
     }

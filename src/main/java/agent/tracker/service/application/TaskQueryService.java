@@ -55,8 +55,17 @@ public class TaskQueryService {
         }
 
         String normalized = cursor.trim();
-        if (normalized.regionMatches(true, 0, "o:", 0, 2)) {
-            normalized = normalized.substring(2);
+        int separatorIndex = normalized.indexOf(':');
+        if (separatorIndex > 0) {
+            String prefix = normalized.substring(0, separatorIndex).trim();
+            String payload = normalized.substring(separatorIndex + 1).trim();
+            if (!prefix.equalsIgnoreCase("o")) {
+                throw new IllegalArgumentException("cursor prefix is unsupported (allowed: o:<n>)");
+            }
+            if (payload.isBlank()) {
+                throw new IllegalArgumentException("cursor must be a non-negative integer or offset token (o:<n>)");
+            }
+            normalized = payload;
         }
 
         try {

@@ -208,6 +208,9 @@ class TaskRestMcpParityTest {
         ListTasksResponse restPage2WithOffsetToken = client.toBlocking().retrieve(HttpRequest.GET("/v1/tasks?limit=2&cursor=o:" + restPage1.nextCursor()), ListTasksResponse.class);
         assertEquals(restPage2.tasks().size(), restPage2WithOffsetToken.tasks().size());
 
+        ListTasksResponse restPage2WithUppercaseOffsetToken = client.toBlocking().retrieve(HttpRequest.GET("/v1/tasks?limit=2&cursor=O:%20" + restPage1.nextCursor()), ListTasksResponse.class);
+        assertEquals(restPage2.tasks().size(), restPage2WithUppercaseOffsetToken.tasks().size());
+
         TaskMcpTools.ListTasksToolResponse mcpPage1 = mcpTools.listTasks(new TaskMcpTools.ListTasksToolRequest(null, null, 2, null));
         assertEquals(restPage1.tasks().size(), mcpPage1.tasks().size());
         assertEquals(restPage1.nextCursor(), mcpPage1.nextCursor());
@@ -217,5 +220,21 @@ class TaskRestMcpParityTest {
 
         TaskMcpTools.ListTasksToolResponse mcpPage2WithOffsetToken = mcpTools.listTasks(new TaskMcpTools.ListTasksToolRequest(null, "o:" + mcpPage1.nextCursor(), 2, null));
         assertEquals(restPage2.tasks().size(), mcpPage2WithOffsetToken.tasks().size());
+    }
+
+    @Test
+    void shouldMapUnsupportedCursorPrefixToBadRequestAcrossRestAndMcp() {
+        HttpClientResponseException restException = assertThrows(HttpClientResponseException.class, () ->
+            client.toBlocking().exchange(HttpRequest.GET("/v1/tasks?cursor=s:1"), Map.class)
+        );
+
+        McpToolException mcpException = assertThrows(McpToolException.class, () ->
+            mcpTools.listTasks(new TaskMcpTools.ListTasksToolRequest(null, "s:1", 20, null))
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, restException.getStatus());
+        Map<?, ?> restBody = restException.getResponse().getBody(Map.class).orElseThrow();
+        assertEquals("BAD_REQUEST", restBody.get("code"));
+        assertEquals("BAD_REQUEST", mcpException.getCode());
     }
 }
