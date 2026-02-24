@@ -6,8 +6,9 @@
 - **Related:** `ADR-002-v1-scope-and-parity.md`, `ADR-004-idempotency-mismatch-and-conflict-code.md`, `ARCHITECTURE.md`
 
 ## Context
-REST v1 behavior is implemented, while MCP adapter work is pending. Without explicit parity and contract-governance gates, the project risks:
+REST v1 behavior is implemented and MCP application tools exist, but required release governance is still incomplete. Without explicit parity/runtime/contract gates, the project risks:
 - semantic drift between transports
+- adapter surface drift between code-level and runtime MCP registration
 - accidental breaking contract changes
 - reduced confidence in retry/conflict behavior for clients
 

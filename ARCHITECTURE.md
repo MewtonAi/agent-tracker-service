@@ -15,11 +15,12 @@ Task-first system of record for agent work tracking, exposed via REST and prepar
 
 ## Layered design
 - **api**: REST controllers + global error mapping (RFC7807-style)
-- **application**: `TaskCommandService`, `TaskQueryService`, `TaskStore` seam
+- **application**: `TaskCommandService`, `TaskQueryService`, `TaskStore` seam, `IdempotencyTelemetry`
 - **domain**: task model, transition policy, domain exceptions
 - **infrastructure**:
   - in-memory store (default when `task.store` is absent)
   - Mongo store (`task.store=mongo`) with Micronaut Data documents/repositories
+  - logging telemetry baseline (`LoggingIdempotencyTelemetry`)
 
 ## Adapter readiness matrix
 - REST v1: **implemented**
@@ -29,7 +30,8 @@ Task-first system of record for agent work tracking, exposed via REST and prepar
   - `PATCH /v1/tasks/{id}/status` *(Idempotency-Key required)*
 - MCP v1 tool service surface: **implemented in application adapter** (`TaskMcpTools`)
   - methods: `createTask`, `getTask`, `listTasks`, `updateTaskStatus`
-  - note: MCP transport-level registration/schema verification is pending runtime validation
+  - code-level surface/schema contract tests are in place
+  - runtime transport-level registration/schema verification remains pending
 
 ## Error contract
 Response body fields: `type`, `title`, `status`, `detail`, `instance`, `code`, `correlationId`.
@@ -57,13 +59,15 @@ Implemented:
   - `idempotency_records`: TTL on `expiresAt`
 - idempotency TTL retention configurable (`idempotency.ttl-hours`, default 48h)
 - migration posture: v2-only idempotency semantics; no legacy key-only replay fallback in current repo lineage (ADR-007)
+- idempotency observability markers emitted (`idempotency.first_write`, `idempotency.replay_hit`, `idempotency.mismatch_reject`) with operation dimension
 
 Remaining MVP-critical gaps:
-- MCP parity CI gate + transport-level verification not yet wired
+- parity tests are not yet wired as an explicit CI release gate
+- MCP runtime registration/schema verification not yet wired
 - OpenAPI snapshot/diff governance absent
-- Idempotency replay observability counters not yet emitted (`first_write`, `replay_hit`, `mismatch_reject`)
 
 ## Current architectural focus (next)
-1. Deliver MCP tool surface through shared services only.
-2. Add parity and contract-governance gates in CI (REST↔MCP scenarios + OpenAPI drift check).
-3. Add idempotency replay observability and keep ADR-007 v2-only posture enforced via tests/docs.
+1. Wire REST↔MCP parity scenarios as required CI gate.
+2. Add MCP runtime smoke verification (discoverability/schema) and enforce it pre-merge.
+3. Add OpenAPI snapshot + drift check to lock externally visible REST contract.
+4. Post-MVP: promote idempotency markers to metrics dashboards/alerts.

@@ -20,13 +20,16 @@ Owner: Product/Architecture
   - payload fingerprint mismatch rejection (`IDEMPOTENCY_KEY_REUSE_MISMATCH`)
   - TTL index on explicit `expiresAt`
   - retention configurable via `idempotency.ttl-hours` (default 48h)
-
-### Not shipped / not release-safe yet
 - ✅ MCP application tool surface implemented via `TaskMcpTools` (`createTask`, `getTask`, `listTasks`, `updateTaskStatus`) sharing existing services.
 - ✅ REST/MCP parity test baseline added (`TaskRestMcpParityTest`) for create, transition, and idempotency-mismatch semantics.
-- 🟡 MCP transport-level schema/registration contract tests added at code level (`TaskMcpToolRegistrationContractTest`), but runtime transport-wire verification is still pending.
-- ❌ OpenAPI generation/snapshot/diff gate missing.
+- ✅ MCP code-level registration/schema contract tests added (`TaskMcpToolRegistrationContractTest`).
+- ✅ REST error-code lock suite added (`ErrorCatalogContractTest`) to stabilize external `code` contract.
 - ✅ Idempotency replay observability event markers standardized (`idempotency.first_write`, `idempotency.replay_hit`, `idempotency.mismatch_reject`) with operation dimension.
+
+### Not shipped / not release-safe yet
+- ❌ MCP runtime transport-wire verification in CI/local runbook (discoverability + schema).
+- ❌ OpenAPI generation/snapshot/diff gate in CI.
+- 🟡 Parity tests exist but are not yet an explicit CI release gate.
 
 ---
 
@@ -36,21 +39,21 @@ Owner: Product/Architecture
 
 ### EPIC P0-A: MCP delivery + semantic parity (highest impact)
 1. ✅ **TKT-P0-A1 — Implement 4 MCP tools via shared services**
-2. 🟡 **TKT-P0-A2 — REST/MCP parity scenario suite in CI** (baseline scenarios implemented; CI gate still pending)
-3. **TKT-P0-A3 — MCP runtime registration/schema verification**
+2. 🟡 **TKT-P0-A2 — REST/MCP parity scenario suite in CI** (tests implemented; gate wiring pending)
+3. 🟡 **TKT-P0-A3 — MCP runtime registration/schema verification** (code contract tests done; runtime smoke/gate pending)
 
 ### EPIC P0-B: Contract governance
-3. **TKT-P0-B1 — OpenAPI generation + snapshot + drift gate**
-4. **TKT-P0-B2 — Error catalog lock tests (`code` stability)**
+4. ❌ **TKT-P0-B1 — OpenAPI generation + snapshot + drift gate**
+5. ✅ **TKT-P0-B2 — Error catalog lock tests (`code` stability)**
 
 ### EPIC P0-C: Idempotency operations readiness
-5. **TKT-P0-C1 — Idempotency replay observability**
-6. ✅ **TKT-P0-C2 — Migration decision log completed (ADR-007): v2-only posture, no legacy fallback**
+6. ✅ **TKT-P0-C1 — Idempotency replay observability baseline (structured markers + tests)**
+7. ✅ **TKT-P0-C2 — Migration decision log completed (ADR-007): v2-only posture, no legacy fallback**
 
 ## P1 — Post-MVP hardening
+- Promote idempotency observability from log markers to durable metrics dashboards/alerts
 - Cursor pagination for list API
 - Task event timeline/read model
-- Metrics dashboard and baseline SLOs
 - Remove stale/deferred project-surface DTO/contracts from public API package
 
 ## P2 — Strategic
@@ -62,71 +65,43 @@ Owner: Product/Architecture
 
 ## 3) Implementation-ready tickets (with acceptance criteria)
 
-### TKT-P0-A1 — MCP 4-tool adapter
+### TKT-P0-A2 — REST/MCP parity suite as CI release gate
 **Scope**
-- Add MCP tools: `create_task`, `get_task`, `list_tasks`, `update_task_status`.
-- Keep transport mapping thin; no business-rule duplication.
+- Treat parity scenarios as required gate for merge/release.
 
 **Acceptance criteria**
-- Tool schemas enforce same required fields/validation semantics as REST.
-- Tool handlers delegate to existing application services.
-- Tool error responses map to same semantic code set as REST.
-- Tests cover happy path, not found, invalid transition, replay, mismatch.
-
-### TKT-P0-A2 — REST/MCP parity suite
-**Scope**
-- Scenario-driven parity harness runs identical intent through both adapters.
-
-**Acceptance criteria**
-- Equivalent final state across adapters.
-- Equivalent error category/code across adapters.
-- CI job fails on parity drift.
+- CI executes `TaskRestMcpParityTest` on every PR.
+- Build fails when REST/MCP diverge on final state or error `code`.
+- CI log links to parity test report/artifact for debugging.
 
 ### TKT-P0-A3 — MCP runtime registration/schema verification
 **Scope**
 - Verify tool registration and request schema exposure in an actual MCP runtime session.
-- Capture a reproducible smoke check (local command + expected tool inventory).
+- Capture reproducible smoke command(s) in README/runbook.
 
 **Acceptance criteria**
 - Runtime reports all 4 task tools discoverable.
-- Required input fields align with current request records (`idempotencyKey`, `taskId`, etc.).
-- Smoke check is documented and executable by any developer.
+- Required fields align with request records (`idempotencyKey`, `taskId`, etc.).
+- Smoke check is executable by any developer (single documented command sequence).
+- CI (or pre-merge job) enforces the smoke verification result.
 
 ### TKT-P0-B1 — OpenAPI contract lock
 **Scope**
-- Generate and check in `openapi.yaml`; enforce snapshot drift gate in CI.
+- Generate and version `openapi.yaml`; enforce snapshot drift gate.
 
 **Acceptance criteria**
-- Snapshot file versioned in repo.
+- Snapshot file is committed in repo.
 - CI fails on drift unless snapshot update is explicit in PR.
 - Error examples include `CONCURRENT_MODIFICATION` and `IDEMPOTENCY_KEY_REUSE_MISMATCH`.
 
-### TKT-P0-B2 — Error catalog stability tests
+### TKT-P1-O11 — Idempotency metrics/alerts hardening (post-MVP)
 **Scope**
-- Lock externally visible `code` values used by REST errors.
+- Extend existing observability markers into durable metrics + alert thresholds.
 
 **Acceptance criteria**
-- Contract tests fail on unreviewed code renames/removals.
-- ADR references included in test documentation/comments.
-
-### TKT-P0-C1 — Idempotency replay observability
-**Scope**
-- Emit structured counters/logs for replay lifecycle.
-
-**Acceptance criteria**
-- Counters/log markers: `idempotency.first_write`, `idempotency.replay_hit`, `idempotency.mismatch_reject`.
-- Metric/log dimensions include operation name.
-- Replay/mismatch integration tests assert signal emission (or equivalent hook).
-
-### TKT-P0-C2 — Legacy migration decision record ✅ Done
-**Status**
-- Completed via ADR-007 (`idempotency-v2-only-posture`).
-
-**Implemented decision**
-- Repository posture is explicitly v2-only (`operation`, `key`, `payloadHash`, `expiresAt`) with no legacy key-only replay fallback.
-
-**Follow-on enforcement (remaining hardening)**
-- Add a targeted test/doc check that fails if fallback semantics are reintroduced without ADR.
+- Counters exported for first-write/replay/mismatch by operation.
+- Dashboard shows replay ratio and mismatch rate.
+- Alert thresholds documented for anomaly conditions.
 
 ---
 
@@ -134,23 +109,19 @@ Owner: Product/Architecture
 
 **Slice 1 (MVP unlock):** TKT-P0-A2, TKT-P0-A3
 
-**Slice 2 (contract + ops hardening):** TKT-P0-B1, TKT-P0-B2, TKT-P0-C1
+**Slice 2 (contract governance):** TKT-P0-B1
 
-**Already completed decision work:** TKT-P0-C2 (ADR-007)
+**Post-MVP:** TKT-P1-O11
 
 ---
 
 ## 5) Active risks to monitor
-- MCP implementation delay increases chance of semantic drift from REST.
+- MCP runtime registration may drift from code-level contract tests without a transport-wire gate.
 - OpenAPI drift without CI gate can create silent breaking changes.
-- Deferred project DTOs in API package can confuse clients about supported v1 surface.
+- Deferred project DTOs in API package can still confuse clients about supported v1 surface.
 
-## 6) Developer update (2026-02-24 run)
-- Added REST error-code lock suite: src/test/java/agent/tracker/service/api/ErrorCatalogContractTest.java (ADR-003/004/006 guardrail).
-- Added idempotency observability hooks and signals:
-  - interface: IdempotencyTelemetry
-  - default implementation: LoggingIdempotencyTelemetry
-  - emitted markers: idempotency.first_write, idempotency.replay_hit, idempotency.mismatch_reject (with operation name).
-  - tests: TaskCommandServiceObservabilityTest
-- Added MCP tool registration/schema guardrail test: TaskMcpToolRegistrationContractTest (code-level contract; runtime wire check still pending).
-- Next planning focus: TKT-P0-B1 OpenAPI snapshot + CI drift gate, and TKT-P0-A3 runtime MCP smoke registration check in CI.
+## 6) Developer handoff notes for next implementer
+- **First unblock:** wire parity tests into CI as hard gate (`TKT-P0-A2`).
+- **Then verify MCP runtime:** add smoke script/runbook + CI assertion for tool inventory/schema (`TKT-P0-A3`).
+- **Then lock contract:** implement OpenAPI snapshot/diff governance (`TKT-P0-B1`).
+- Keep ADR-007 posture intact (v2-only idempotency semantics) unless superseded by a new ADR.
