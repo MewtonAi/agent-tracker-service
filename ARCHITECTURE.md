@@ -80,11 +80,11 @@ MCP correlation policy (`ADR-012-mcp-correlation-id-canonicalization-policy.md`)
 Implemented:
 - `TaskDocument` with `@Version` optimistic locking
 - `MongoTaskStore` adapter + repositories
-- startup index initializer creates:
-  - `tasks`: `{ status: 1, updatedAt: -1, taskId: -1 }`
-  - `tasks`: `{ updatedAt: -1, taskId: -1 }`
-  - `idempotency_records`: unique `{ operation: 1, key: 1 }`
-  - `idempotency_records`: TTL on `expiresAt`
+- startup index initializer enforces named indexes from `docs/mongo-index-manifest.md` and emits structured verification logs (`event=mongo_index_state`, `outcome=created|existing`)
+  - `tasks_status_updatedAt_taskId_idx`: `{ status: 1, updatedAt: -1, taskId: -1 }`
+  - `tasks_updatedAt_taskId_idx`: `{ updatedAt: -1, taskId: -1 }`
+  - `idempotency_records_operation_key_uk`: unique `{ operation: 1, key: 1 }`
+  - `idempotency_records_expiresAt_ttl_idx`: TTL on `expiresAt` (`expireAfterSeconds=0`)
 - idempotency TTL retention configurable (`idempotency.ttl-hours`, default 48h)
 - migration posture: v2-only idempotency semantics; no legacy key-only replay fallback (ADR-007)
 - idempotency observability markers emitted (`idempotency.first_write`, `idempotency.replay_hit`, `idempotency.mismatch_reject`) with operation dimension

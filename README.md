@@ -16,6 +16,7 @@ Current implementation snapshot (inspected 2026-02-24 PST):
 - Concurrency conflict code locked for optimistic-write races: `CONCURRENT_MODIFICATION`
 - Status update idempotency is scoped by `(taskId, idempotencyKey)` to avoid cross-task replay collisions
 - Mongo idempotency v2 baseline: unique `(operation,key)`, payload hash mismatch detection, TTL on `expiresAt`
+- Mongo index manifest + startup verification contract: `docs/mongo-index-manifest.md` (`event=mongo_index_state`, integration-gated)
 - Mismatch contract is enforced as HTTP 409 with `IDEMPOTENCY_KEY_REUSE_MISMATCH`
 - Mongo idempotency TTL retention is configurable via `idempotency.ttl-hours` / `IDEMPOTENCY_TTL_HOURS` (default 48h)
 - MCP runtime transport handshake/discovery is contract-gated (`initialize` + `tools/list`)

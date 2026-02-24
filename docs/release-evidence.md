@@ -49,7 +49,12 @@ Reference active contracts only:
 - [ ] If constrained, CI fallback source is declared and linked
 - [ ] ADR-021 provenance-ladder path is explicitly stated
 
-## 7) Handoff + decision consistency
+## 7) Mongo index verification signal (required for mongo-backed release candidates)
+- [ ] `MongoTaskStoreIntegrationTest.shouldProvisionRequiredMongoIndexesFromManifest` status recorded as `PASS` / `FAIL` / `NOT_RUN`
+- [ ] Startup verification event observed (`event=mongo_index_state`) from current candidate run/log source
+- [ ] `docs/mongo-index-manifest.md` reviewed and matches implementation
+
+## 8) Handoff + decision consistency
 - [ ] Handoff note includes the same evidence headings and outcomes
 - [ ] Any unresolved risk/blocker is explicitly listed
 - [ ] Explicit release decision captured: `GO` or `NO-GO` (owner + timestamp)

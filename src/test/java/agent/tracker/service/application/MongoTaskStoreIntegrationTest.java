@@ -9,10 +9,14 @@ import agent.tracker.service.domain.model.TaskStatus;
 import agent.tracker.service.domain.model.TaskType;
 import agent.tracker.service.infrastructure.mongo.IdempotencyMongoRepository;
 import agent.tracker.service.infrastructure.mongo.IdempotencyRecordDocument;
+import agent.tracker.service.infrastructure.mongo.MongoIndexManifest;
+import com.mongodb.client.MongoClient;
 import java.time.Instant;
 import io.micronaut.context.annotation.Property;
+import io.micronaut.context.annotation.Value;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
+import org.bson.Document;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,6 +39,12 @@ class MongoTaskStoreIntegrationTest {
 
     @Inject
     IdempotencyMongoRepository idempotencyRepository;
+
+    @Inject
+    MongoClient mongoClient;
+
+    @Value("${mongodb.database:agent_tracker_test}")
+    String databaseName;
 
     @Test
     void shouldPersistAndReplayIdempotentMutations() {
@@ -188,5 +198,31 @@ class MongoTaskStoreIntegrationTest {
     @Test
     void shouldRejectUnsupportedCursorPrefixOnMongoStorePath() {
         assertThrows(IllegalArgumentException.class, () -> queryService.listTasks(null, "s:1", 20));
+    }
+
+    @Test
+    void shouldProvisionRequiredMongoIndexesFromManifest() {
+        var database = mongoClient.getDatabase(databaseName);
+
+        for (var required : MongoIndexManifest.REQUIRED_INDEXES) {
+            Document index = database.getCollection(required.collection())
+                .listIndexes()
+                .into(new java.util.ArrayList<>())
+                .stream()
+                .filter(candidate -> required.name().equals(candidate.getString("name")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Missing required index: " + required.collection() + "/" + required.name()));
+
+            assertEquals(required.keys(), index.get("key"), "index key mismatch for " + required.name());
+            assertEquals(required.unique(), Boolean.TRUE.equals(index.getBoolean("unique")), "unique option mismatch for " + required.name());
+
+            if (required.expireAfterSeconds() == null) {
+                assertNull(index.get("expireAfterSeconds"), "ttl should be absent for " + required.name());
+            } else {
+                Object ttl = index.get("expireAfterSeconds");
+                assertNotNull(ttl, "ttl should exist for " + required.name());
+                assertEquals(required.expireAfterSeconds().longValue(), ((Number) ttl).longValue(), "ttl mismatch for " + required.name());
+            }
+        }
     }
 }
