@@ -23,14 +23,13 @@ Owner: Product/Architecture
 - ✅ MCP application tool surface implemented via `TaskMcpTools` (`createTask`, `getTask`, `listTasks`, `updateTaskStatus`) sharing existing services.
 - ✅ REST/MCP parity suite present and CI-gated via `./gradlew check` (`TaskRestMcpParityTest`).
 - ✅ MCP code-level registration/schema contract tests added (`TaskMcpToolRegistrationContractTest`).
-- ✅ MCP runtime boot + bean/method surface test present (`TaskMcpRuntimeTransportContractTest`).
-- ✅ OpenAPI baseline snapshot + CI verification task is wired (`verifyOpenApiSnapshot`).
+- ✅ MCP runtime transport test now includes wire-level HTTP handshake (`initialize` + `tools/list`) and asserts discoverable tools + schema markers (`TaskMcpRuntimeTransportContractTest`).
+- ✅ OpenAPI contract gate now enforces strict generated-vs-checked-in equality (`verifyOpenApiSnapshot`) while retaining required marker checks.
 - ✅ REST error-code lock suite added (`ErrorCatalogContractTest`) to stabilize external `code` contract.
 - ✅ Idempotency replay observability event markers standardized (`idempotency.first_write`, `idempotency.replay_hit`, `idempotency.mismatch_reject`) with operation dimension.
 
 ### Not shipped / not release-safe yet
-- 🟡 MCP runtime verification still stops at context + reflection checks; explicit transport-wire `tools/list` handshake verification is pending.
-- 🟡 OpenAPI gate still checks marker presence only; strict generated-vs-checked-in equality enforcement is pending.
+- 🟡 Post-MVP observability hardening: promote idempotency markers to durable metrics + alert thresholds.
 
 ---
 
@@ -41,10 +40,10 @@ Owner: Product/Architecture
 ### EPIC P0-A: MCP delivery + semantic parity (highest impact)
 1. ✅ **TKT-P0-A1 — Implement 4 MCP tools via shared services**
 2. ✅ **TKT-P0-A2 — REST/MCP parity scenario suite in CI**
-3. 🟡 **TKT-P0-A3 — MCP transport-level runtime handshake verification**
+3. ✅ **TKT-P0-A3 — MCP transport-level runtime handshake verification**
 
 ### EPIC P0-B: Contract governance
-4. 🟡 **TKT-P0-B1 — OpenAPI strict snapshot drift gate (generated-vs-checked-in)**
+4. ✅ **TKT-P0-B1 — OpenAPI strict snapshot drift gate (generated-vs-checked-in)**
 5. ✅ **TKT-P0-B2 — Error catalog lock tests (`code` stability)**
 
 ### EPIC P0-C: Idempotency operations readiness
@@ -64,28 +63,7 @@ Owner: Product/Architecture
 
 ---
 
-## 3) Implementation-ready tickets (with acceptance criteria)
-
-### TKT-P0-A3 — MCP transport-level runtime handshake verification
-**Scope**
-- Validate tool registration and request schema through MCP transport discovery (not reflection-only tests).
-- Capture reproducible smoke command(s) in README/runbook.
-
-**Acceptance criteria**
-- Runtime `tools/list` reports all 4 task tools discoverable.
-- Required fields align with request records (`idempotencyKey`, `taskId`, etc.).
-- Smoke check is executable by any developer (single documented command sequence).
-- CI (or pre-merge job) enforces the smoke verification result.
-
-### TKT-P0-B1 — OpenAPI strict contract lock
-**Scope**
-- Enforce deterministic generated-vs-checked-in OpenAPI equality in CI.
-
-**Acceptance criteria**
-- Snapshot file (`openapi/openapi.yaml`) is committed in repo.
-- CI generates OpenAPI and fails when diff exists unless snapshot update is included in PR.
-- Error examples include `CONCURRENT_MODIFICATION` and `IDEMPOTENCY_KEY_REUSE_MISMATCH`.
-- Developer docs include exact regenerate command.
+## 3) Next implementation-ready ticket
 
 ### TKT-P1-O11 — Idempotency metrics/alerts hardening (post-MVP)
 **Scope**
@@ -98,23 +76,18 @@ Owner: Product/Architecture
 
 ---
 
-## 4) Recommended execution order (next 2 slices)
+## 4) Recommended execution order (next slice)
 
-**Slice 1 (MVP unlock):** TKT-P0-A3
-
-**Slice 2 (contract hardening):** TKT-P0-B1
-
-**Post-MVP:** TKT-P1-O11
+**Slice 1 (post-MVP hardening):** TKT-P1-O11
 
 ---
 
 ## 5) Active risks to monitor
-- MCP runtime registration can still drift from code-level contract tests without a transport-wire gate.
-- OpenAPI marker-only checks can miss structural contract drift.
+- Metrics/alerts gap may delay detection of idempotency anomaly spikes.
 - Deferred project DTOs in API package can still confuse clients about supported v1 surface.
 
 ## 6) Developer handoff notes for next implementer
 - ✅ Parity + contract checks run via GitHub Actions (`./gradlew check`).
-- **Next unblock:** extend MCP runtime check to explicit transport-wire `tools/list` handshake (`TKT-P0-A3`).
-- **Next contract hardening:** move from OpenAPI marker checks to generated-vs-snapshot strict diff (`TKT-P0-B1`).
+- ✅ MCP runtime handshake gate is transport-level (`initialize` + `tools/list`) in test coverage.
+- ✅ OpenAPI drift gate is strict generated-vs-snapshot equality (`verifyOpenApiSnapshot`).
 - Keep ADR-007 posture intact (v2-only idempotency semantics) unless superseded by a new ADR.

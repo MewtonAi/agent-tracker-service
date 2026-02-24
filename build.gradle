@@ -97,14 +97,27 @@ tasks.register("updateOpenApiSnapshot") {
 
 tasks.register("verifyOpenApiSnapshot") {
     group = "verification"
-    description = "Baseline OpenAPI snapshot gate for v1 routes/error-codes"
+    description = "Strict OpenAPI drift gate: generated Micronaut output must match committed openapi/openapi.yaml"
+    dependsOn(tasks.named("classes"))
     inputs.file(openApiSnapshotFile)
     doLast {
         def snapshot = openApiSnapshotFile.asFile
         if (!snapshot.exists()) {
             throw new GradleException("Missing ${snapshot}. Run ./gradlew updateOpenApiSnapshot and commit the result.")
         }
-        def text = snapshot.getText("UTF-8")
+
+        def generated = generatedOpenApiFileProvider.get()
+        if (generated == null) {
+            throw new GradleException("No generated OpenAPI spec found in build/classes/java/main/META-INF/swagger")
+        }
+
+        def snapshotText = snapshot.getText("UTF-8").replace("\r\n", "\n")
+        def generatedText = generated.getText("UTF-8").replace("\r\n", "\n")
+
+        if (snapshotText != generatedText) {
+            throw new GradleException("OpenAPI snapshot drift detected. Run ./gradlew updateOpenApiSnapshot and commit openapi/openapi.yaml.")
+        }
+
         [
             "/v1/tasks:",
             "/v1/tasks/{taskId}:",
@@ -112,7 +125,7 @@ tasks.register("verifyOpenApiSnapshot") {
             "CONCURRENT_MODIFICATION",
             "IDEMPOTENCY_KEY_REUSE_MISMATCH"
         ].each { marker ->
-            if (!text.contains(marker)) {
+            if (!snapshotText.contains(marker)) {
                 throw new GradleException("OpenAPI snapshot missing required marker '${marker}'.")
             }
         }
