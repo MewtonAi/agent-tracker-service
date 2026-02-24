@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotNull;
 
 @Serdeable
 public record UpdateTaskStatusRequest(
-    String taskId,
     @NotNull TaskStatus status,
     @NotBlank String requestedBy
 ) {

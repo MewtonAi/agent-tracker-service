@@ -11,7 +11,6 @@ import lombok.With;
 @Serdeable
 public class Task {
     String taskId;
-    String projectId;
     String title;
     String description;
     TaskType taskType;

@@ -15,6 +15,8 @@ import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @MicronautTest
@@ -27,13 +29,14 @@ class TaskControllerTest {
     @Test
     void shouldCreateAndFetchTask() {
         TaskResponse created = client.toBlocking().retrieve(
-            HttpRequest.POST("/v1/tasks", new CreateTaskRequest("proj-1", "Create API", "desc", TaskType.FEATURE, TaskPriority.HIGH, "qa")),
+            HttpRequest.POST("/v1/tasks", new CreateTaskRequest("Create API", "desc", TaskType.FEATURE, TaskPriority.HIGH, "qa"))
+                .header("Idempotency-Key", "rest-create-1"),
             TaskResponse.class
         );
 
         assertNotNull(created.taskId());
         assertEquals("Create API", created.title());
-        assertEquals(TaskStatus.BACKLOG, created.status());
+        assertEquals(TaskStatus.NEW, created.status());
 
         TaskResponse fetched = client.toBlocking().retrieve(HttpRequest.GET("/v1/tasks/" + created.taskId()), TaskResponse.class);
         assertEquals(created.taskId(), fetched.taskId());
@@ -42,17 +45,46 @@ class TaskControllerTest {
     @Test
     void shouldReturnConflictForInvalidTransition() {
         TaskResponse created = client.toBlocking().retrieve(
-            HttpRequest.POST("/v1/tasks", new CreateTaskRequest("proj-2", "Transition", "desc", TaskType.BUG, TaskPriority.MEDIUM, "qa")),
+            HttpRequest.POST("/v1/tasks", new CreateTaskRequest("Transition", "desc", TaskType.BUG, TaskPriority.MEDIUM, "qa"))
+                .header("Idempotency-Key", "rest-create-2"),
             TaskResponse.class
         );
 
         HttpClientResponseException exception = assertThrows(HttpClientResponseException.class, () ->
             client.toBlocking().exchange(
-                HttpRequest.PATCH("/v1/tasks/" + created.taskId() + "/status", new UpdateTaskStatusRequest(created.taskId(), TaskStatus.DONE, "qa")),
+                HttpRequest.PATCH("/v1/tasks/" + created.taskId() + "/status", new UpdateTaskStatusRequest(TaskStatus.DONE, "qa"))
+                    .header("Idempotency-Key", "rest-status-1"),
                 TaskResponse.class
             )
         );
 
         assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+    }
+
+    @Test
+    void shouldReturnNotFoundProblemWithCorrelationId() {
+        HttpClientResponseException exception = assertThrows(HttpClientResponseException.class, () ->
+            client.toBlocking().exchange(
+                HttpRequest.GET("/v1/tasks/missing").header("X-Correlation-Id", "corr-123"),
+                Map.class
+            )
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        Map<?, ?> body = exception.getResponse().getBody(Map.class).orElseThrow();
+        assertEquals("TASK_NOT_FOUND", body.get("code"));
+        assertEquals("corr-123", body.get("correlationId"));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenIdempotencyKeyMissing() {
+        HttpClientResponseException exception = assertThrows(HttpClientResponseException.class, () ->
+            client.toBlocking().exchange(
+                HttpRequest.POST("/v1/tasks", new CreateTaskRequest("Create API", "desc", TaskType.FEATURE, TaskPriority.HIGH, "qa")),
+                Map.class
+            )
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
     }
 }

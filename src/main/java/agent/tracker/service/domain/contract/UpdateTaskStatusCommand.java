@@ -7,6 +7,7 @@ import io.micronaut.serde.annotation.Serdeable;
 public record UpdateTaskStatusCommand(
     String taskId,
     TaskStatus status,
-    String updatedBy
+    String updatedBy,
+    String idempotencyKey
 ) {
 }

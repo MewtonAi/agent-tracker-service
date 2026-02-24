@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotBlank;
 
 @Serdeable
 public record CreateTaskRequest(
-    @NotBlank String projectId,
     @NotBlank String title,
     String description,
     TaskType taskType,

@@ -11,13 +11,11 @@ public final class TaskTransitionPolicy {
     private static final Map<TaskStatus, Set<TaskStatus>> ALLOWED = new EnumMap<>(TaskStatus.class);
 
     static {
-        ALLOWED.put(TaskStatus.BACKLOG, EnumSet.of(TaskStatus.READY, TaskStatus.CANCELLED));
-        ALLOWED.put(TaskStatus.READY, EnumSet.of(TaskStatus.BACKLOG, TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED));
-        ALLOWED.put(TaskStatus.IN_PROGRESS, EnumSet.of(TaskStatus.READY, TaskStatus.BLOCKED, TaskStatus.IN_REVIEW, TaskStatus.CANCELLED));
-        ALLOWED.put(TaskStatus.BLOCKED, EnumSet.of(TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED));
-        ALLOWED.put(TaskStatus.IN_REVIEW, EnumSet.of(TaskStatus.IN_PROGRESS, TaskStatus.DONE, TaskStatus.CANCELLED));
+        ALLOWED.put(TaskStatus.NEW, EnumSet.of(TaskStatus.IN_PROGRESS, TaskStatus.CANCELED));
+        ALLOWED.put(TaskStatus.IN_PROGRESS, EnumSet.of(TaskStatus.BLOCKED, TaskStatus.DONE, TaskStatus.CANCELED));
+        ALLOWED.put(TaskStatus.BLOCKED, EnumSet.of(TaskStatus.IN_PROGRESS, TaskStatus.CANCELED));
         ALLOWED.put(TaskStatus.DONE, EnumSet.noneOf(TaskStatus.class));
-        ALLOWED.put(TaskStatus.CANCELLED, EnumSet.noneOf(TaskStatus.class));
+        ALLOWED.put(TaskStatus.CANCELED, EnumSet.noneOf(TaskStatus.class));
     }
 
     private TaskTransitionPolicy() {

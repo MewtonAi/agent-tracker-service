@@ -1,11 +1,9 @@
 package agent.tracker.service.domain.model;
 
 public enum TaskStatus {
-    BACKLOG,
-    READY,
+    NEW,
     IN_PROGRESS,
     BLOCKED,
-    IN_REVIEW,
     DONE,
-    CANCELLED
+    CANCELED
 }

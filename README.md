@@ -1,60 +1,27 @@
 ## Agent Tracker Service (MVP)
 
-Implemented in this iteration:
-- REST task lifecycle endpoints (`/v1/tasks`): create, get, list, update-status, assign, unassign
-- In-memory task lifecycle service with canonical transition policy
-- Structured API error responses for 400/404/409 scenarios
-- Unit + integration tests for lifecycle and controller behavior
+Current implementation snapshot:
+- Canonical v1 Task lifecycle aligned across code/docs (`NEW`, `IN_PROGRESS`, `BLOCKED`, `DONE`, `CANCELED`)
+- Task-first scope (Project APIs deferred)
+- Application services:
+  - `TaskCommandService` (create, update status, idempotency)
+  - `TaskQueryService` (get, list by optional status)
+- REST v1 endpoints:
+  - `POST /v1/tasks` *(Idempotency-Key required)*
+  - `GET /v1/tasks/{id}`
+  - `GET /v1/tasks?status=`
+  - `PATCH /v1/tasks/{id}/status` *(Idempotency-Key required)*
+- RFC7807-style API error contract with stable `code` and `correlationId`
 
-Current v1 canonical status model:
-`BACKLOG, READY, IN_PROGRESS, BLOCKED, IN_REVIEW, DONE, CANCELLED`
+## Next priorities
+1. Mongo persistence adapter + indexes + optimistic locking
+2. REST/MCP parity through shared service layer
+3. OpenAPI generation/check-in pipeline
 
-> Note: persistence is currently in-memory. Mongo durability, idempotency, optimistic locking, and MCP parity are the active next steps.
+## Local validation
+Run:
+```bash
+./gradlew test
+```
 
-## Micronaut 4.10.8 Documentation
-
-- [User Guide](https://docs.micronaut.io/4.10.8/guide/index.html)
-- [API Reference](https://docs.micronaut.io/4.10.8/api/index.html)
-- [Configuration Reference](https://docs.micronaut.io/4.10.8/guide/configurationreference.html)
-- [Micronaut Guides](https://guides.micronaut.io/index.html)
----
-
-- [Shadow Gradle Plugin](https://gradleup.com/shadow/)
-- [Micronaut Gradle Plugin documentation](https://micronaut-projects.github.io/micronaut-gradle-plugin/latest/)
-- [GraalVM Gradle Plugin documentation](https://graalvm.github.io/native-build-tools/latest/gradle-plugin.html)
-## Feature test-resources documentation
-
-- [Micronaut Test Resources documentation](https://micronaut-projects.github.io/micronaut-test-resources/latest/guide/)
-
-
-## Feature mcp-http documentation
-
-- [Micronaut MCP HTTP documentation](https://micronaut-projects.github.io/micronaut-mcp/latest/guide/#server)
-
-- [https://modelcontextprotocol.io](https://modelcontextprotocol.io)
-
-
-## Feature micronaut-aot documentation
-
-- [Micronaut AOT documentation](https://micronaut-projects.github.io/micronaut-aot/latest/guide/)
-
-
-## Feature data-mongodb documentation
-
-- [Micronaut Data MongoDB documentation](https://micronaut-projects.github.io/micronaut-data/latest/guide/#mongo)
-
-- [https://docs.mongodb.com](https://docs.mongodb.com)
-
-
-## Feature lombok documentation
-
-- [Micronaut Project Lombok documentation](https://docs.micronaut.io/latest/guide/index.html#lombok)
-
-- [https://projectlombok.org/features/all](https://projectlombok.org/features/all)
-
-
-## Feature serialization-jackson documentation
-
-- [Micronaut Serialization Jackson Core documentation](https://micronaut-projects.github.io/micronaut-serialization/latest/guide/)
-
-
+> In this run, local test execution could not be completed in the environment because `JAVA_HOME`/`java` was unavailable.

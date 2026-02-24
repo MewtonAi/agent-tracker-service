@@ -13,40 +13,40 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TaskLifecycleServiceTest {
 
-    private final TaskLifecycleService service = new TaskLifecycleService();
+    private final InMemoryTaskStore store = new InMemoryTaskStore();
+    private final TaskCommandService commandService = new TaskCommandService(store);
 
     @Test
-    void shouldCreateTaskWithDefaults() {
-        Task task = service.createTask(new CreateTaskCommand("proj-1", "Implement endpoint", null, null, null, "owner"));
+    void shouldCreateTaskWithDefaultsAndIdempotency() {
+        Task first = commandService.createTask(new CreateTaskCommand("Implement endpoint", null, null, null, "owner", "idem-create-1"));
+        Task replay = commandService.createTask(new CreateTaskCommand("Ignored on replay", null, TaskType.BUG, TaskPriority.HIGH, "owner", "idem-create-1"));
 
-        assertNotNull(task.getTaskId());
-        assertEquals(TaskStatus.BACKLOG, task.getStatus());
-        assertEquals(TaskPriority.MEDIUM, task.getPriority());
-        assertEquals(TaskType.FEATURE, task.getTaskType());
-        assertEquals("owner", task.getAudit().getCreatedBy());
+        assertEquals(first.getTaskId(), replay.getTaskId());
+        assertEquals(TaskStatus.NEW, first.getStatus());
+        assertEquals(TaskPriority.MEDIUM, first.getPriority());
+        assertEquals(TaskType.FEATURE, first.getTaskType());
+        assertEquals("owner", first.getAudit().getCreatedBy());
     }
 
     @Test
     void shouldRejectInvalidTransition() {
-        Task task = service.createTask(new CreateTaskCommand("proj-1", "Invalid transition test", null, TaskType.BUG, TaskPriority.HIGH, "owner"));
+        Task task = commandService.createTask(new CreateTaskCommand("Invalid transition test", null, TaskType.BUG, TaskPriority.HIGH, "owner", "idem-create-2"));
 
         assertThrows(InvalidTaskTransitionException.class, () ->
-            service.updateTaskStatus(new UpdateTaskStatusCommand(task.getTaskId(), TaskStatus.DONE, "owner"))
+            commandService.updateTaskStatus(new UpdateTaskStatusCommand(task.getTaskId(), TaskStatus.DONE, "owner", "idem-status-1"))
         );
     }
 
     @Test
-    void shouldAllowValidTransitionPath() {
-        Task task = service.createTask(new CreateTaskCommand("proj-1", "Happy path", null, TaskType.FEATURE, TaskPriority.MEDIUM, "owner"));
+    void shouldAllowValidTransitionPathAndStatusIdempotency() {
+        Task task = commandService.createTask(new CreateTaskCommand("Happy path", null, TaskType.FEATURE, TaskPriority.MEDIUM, "owner", "idem-create-3"));
 
-        Task ready = service.updateTaskStatus(new UpdateTaskStatusCommand(task.getTaskId(), TaskStatus.READY, "owner"));
-        Task inProgress = service.updateTaskStatus(new UpdateTaskStatusCommand(task.getTaskId(), TaskStatus.IN_PROGRESS, "owner"));
-        Task inReview = service.updateTaskStatus(new UpdateTaskStatusCommand(task.getTaskId(), TaskStatus.IN_REVIEW, "owner"));
-        Task done = service.updateTaskStatus(new UpdateTaskStatusCommand(task.getTaskId(), TaskStatus.DONE, "owner"));
+        Task inProgress = commandService.updateTaskStatus(new UpdateTaskStatusCommand(task.getTaskId(), TaskStatus.IN_PROGRESS, "owner", "idem-status-2"));
+        Task done = commandService.updateTaskStatus(new UpdateTaskStatusCommand(task.getTaskId(), TaskStatus.DONE, "owner", "idem-status-3"));
+        Task replay = commandService.updateTaskStatus(new UpdateTaskStatusCommand(task.getTaskId(), TaskStatus.BLOCKED, "owner", "idem-status-3"));
 
-        assertEquals(TaskStatus.READY, ready.getStatus());
         assertEquals(TaskStatus.IN_PROGRESS, inProgress.getStatus());
-        assertEquals(TaskStatus.IN_REVIEW, inReview.getStatus());
         assertEquals(TaskStatus.DONE, done.getStatus());
+        assertEquals(TaskStatus.DONE, replay.getStatus());
     }
 }

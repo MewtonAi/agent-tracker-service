@@ -1,54 +1,58 @@
-# Agent Tracker Service — Domain Model (v1 canonical)
+# Agent Tracker Service — Domain Model (v1 Canonical)
 
-## Scope
-v1 models and APIs are task-centric.
-- In scope: task lifecycle, assignment, audit metadata.
-- Out of scope in v1: project aggregate CRUD.
+## v1 Scope Decision (Canonical)
 
-## Core entity
-### `Task`
-Fields:
-- `taskId`
-- `projectId` (reference only)
-- `title`, `description`
-- `taskType`
-- `status`
-- `priority`
-- `assignee` (`AgentRef`, nullable)
-- `audit` (`AuditMetadata`)
+- **In scope (v1):** `Task` lifecycle only (task-first MVP)
+- **Deferred:** `Project` lifecycle APIs/entities
+- **Primary write operations:** create task, update task status
+- **Primary read operations:** get task by id, list tasks (optional status filter)
 
-### `AgentRef`
-- `agentId`
-- `displayName`
-- `capabilities`
+## Task Entity
 
-### `AuditMetadata`
-- `createdAt`, `createdBy`
-- `updatedAt`, `updatedBy`
+Key fields:
+- `taskId` (server-generated)
+- `title` (required)
+- `description` (optional)
+- `taskType` (optional, default `FEATURE`)
+- `status` (server-managed lifecycle)
+- `priority` (optional, default `MEDIUM`)
+- `assignee` (optional)
+- `audit` (`createdAt/By`, `updatedAt/By`)
 
-## Enums (canonical)
+## Enumerations
+
 - `TaskType`: FEATURE, BUG, CHORE, INCIDENT, RESEARCH, DOCS, TEST
-- `TaskStatus`: BACKLOG, READY, IN_PROGRESS, BLOCKED, IN_REVIEW, DONE, CANCELLED
 - `TaskPriority`: LOW, MEDIUM, HIGH, CRITICAL
+- `TaskStatus` (canonical v1):
+  - `NEW`
+  - `IN_PROGRESS`
+  - `BLOCKED`
+  - `DONE`
+  - `CANCELED`
 
-## Lifecycle and invariants
-- Status transitions are validated by `TaskTransitionPolicy`.
-- `DONE` and `CANCELLED` are terminal states.
-- Assignment should be blocked for terminal states (P1 hardening; currently not enforced).
-- `created*` fields are immutable.
-- `updated*` fields change on every successful mutation.
+## Transition Matrix (v1)
 
-## Domain contracts (current)
-- `TaskLifecycleContract`
-  - create task
-  - update status
-  - assign task
-  - unassign task
-  - get task by id
-  - list tasks by project
+| From        | Allowed To                         |
+|-------------|------------------------------------|
+| NEW         | IN_PROGRESS, CANCELED              |
+| IN_PROGRESS | BLOCKED, DONE, CANCELED            |
+| BLOCKED     | IN_PROGRESS, CANCELED              |
+| DONE        | *(none)*                           |
+| CANCELED    | *(none)*                           |
 
-## v1 readiness gaps (domain/application)
-- Add idempotency semantics for mutating operations.
-- Add versioned concurrency control (optimistic locking).
-- Ensure assignment invariants for terminal states.
-- Keep status transition matrix as a single source of truth across REST + MCP.
+Invalid transitions must return conflict semantics (`409` in REST).
+
+## Required vs Optional Inputs (v1)
+
+### Create task
+- Required: `title`, `requestedBy`, `Idempotency-Key`
+- Optional: `description`, `taskType`, `priority`
+
+### Update task status
+- Required: `status`, `requestedBy`, `Idempotency-Key`
+- Optional: none
+
+## Idempotency Contract
+
+- `POST /v1/tasks` and `PATCH /v1/tasks/{id}/status` require `Idempotency-Key` header.
+- Replays with the same key must return the same logical result without creating duplicates.

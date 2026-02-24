@@ -1,77 +1,40 @@
-# Agent Tracker Service Architecture (Micronaut + MongoDB + MCP)
+# Agent Tracker Service Architecture (v1)
 
-## 1) Purpose
-System of record for agent task lifecycle with dual access patterns:
-- REST for service/dashboard integration
-- MCP tools for AI-native orchestration
+## Purpose
+Task-first system of record for agent work tracking, exposed via REST and designed for MCP parity.
 
-## 2) Current state (implemented)
-- Micronaut 4 + Java 21 modular monolith.
-- REST controller for task create/get/list/status + assign/unassign.
-- In-memory application service (`TaskLifecycleService`).
-- Transition policy enforced in domain layer.
-- API error mapping and baseline tests.
+## Canonical v1 decisions
+- Entity scope: **Task only** (Project deferred)
+- Canonical status lifecycle: `NEW -> IN_PROGRESS -> {BLOCKED|DONE|CANCELED}`, `BLOCKED -> {IN_PROGRESS|CANCELED}`
+- Mutations require idempotency key
+- REST and future MCP adapters must use shared application services
 
-## 3) Canonical v1 domain boundary
-- v1 focus: **Task lifecycle only**.
-- `projectId` is a reference field on tasks (no project aggregate API in v1).
+## Layers
+- **api**: REST controllers + exception mapping
+- **application**: `TaskCommandService`, `TaskQueryService`
+- **domain**: task model + transition policy + domain exceptions
+- **infrastructure (next)**: Mongo repositories + index bootstrapping + optimistic locking
 
-### Canonical task statuses
-`BACKLOG, READY, IN_PROGRESS, BLOCKED, IN_REVIEW, DONE, CANCELLED`
+## REST v1
+- `POST /v1/tasks` (requires `Idempotency-Key`)
+- `GET /v1/tasks/{id}`
+- `GET /v1/tasks?status=`
+- `PATCH /v1/tasks/{id}/status` (requires `Idempotency-Key`)
 
-### Transition policy
-- BACKLOG -> READY | CANCELLED
-- READY -> BACKLOG | IN_PROGRESS | CANCELLED
-- IN_PROGRESS -> READY | BLOCKED | IN_REVIEW | CANCELLED
-- BLOCKED -> IN_PROGRESS | CANCELLED
-- IN_REVIEW -> IN_PROGRESS | DONE | CANCELLED
-- DONE -> terminal
-- CANCELLED -> terminal
+## Error contract
+RFC7807-style response body:
+- `type`, `title`, `status`, `detail`, `instance`, `code`, `correlationId`
 
-## 4) Target architecture for MVP readiness
+Error mapping:
+- not found -> `404 TASK_NOT_FOUND`
+- invalid transition -> `409 INVALID_TASK_TRANSITION`
+- validation/input -> `400 VALIDATION_FAILED` / `BAD_REQUEST`
+- unexpected -> `500 INTERNAL_ERROR`
 
-### Inbound adapters
-- REST `/v1/tasks/*`
-- MCP tools: `create_task`, `get_task`, `list_tasks`, `update_task_status`
+`X-Correlation-Id` is echoed from request (or generated) and returned on errors.
 
-### Application layer
-- Shared command/query services used by both REST and MCP.
-- Centralized validation and idempotency coordination.
-
-### Domain layer
-- Task entity/value objects + transition policy (single source of truth).
-- Domain exceptions mapped consistently by adapter layer.
-
-### Outbound adapters
-- Mongo `tasks` persistence with optimistic locking.
-- Optional (P1): `task_events` append-only audit stream.
-
-## 5) Persistence design (MVP)
-Collection: `tasks`
-Core fields:
-- `_id`, `taskId`, `projectId`, `title`, `description`
-- `taskType`, `status`, `priority`, `assignee`
-- `audit` (createdAt/by, updatedAt/by)
-- `idempotencyKey` (or dedicated idempotency collection)
-- `version`
-
-Required indexes:
-- Unique: idempotency/external mutation key
-- Compound: `{ status: 1, priority: -1, audit.updatedAt: -1 }`
-- Compound: `{ projectId: 1, audit.updatedAt: -1 }`
-
-## 6) Contract and error model
-- REST uses versioned path `/v1` and problem-details style errors.
-- Stable `code` and `correlationId` required on error responses.
-- MCP maps to stable errors: `INVALID_ARGUMENT`, `NOT_FOUND`, `CONFLICT`, `INTERNAL`.
-
-## 7) Key tradeoffs / decisions
-- Modular monolith over microservices for speed and simplicity.
-- Mongo chosen for flexible metadata evolution.
-- Shared service layer mandated to prevent REST/MCP semantic drift.
-
-## 8) Immediate architecture work items
-1. Replace in-memory map with Mongo adapter behind existing contract.
-2. Add idempotent mutation handling and optimistic locking.
-3. Implement MCP tool adapter and parity test suite.
-4. Generate and lock OpenAPI as source-of-truth REST contract.
+## Mongo readiness (next ticket)
+- `tasks` collection with indexes on status/updatedAt and owner/status/updatedAt
+- optimistic locking/version field
+- unique idempotency tracking store
+- persistence adapter parity tests (REST + MCP behavior equivalence)

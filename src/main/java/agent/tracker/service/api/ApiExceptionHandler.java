@@ -5,35 +5,72 @@ import agent.tracker.service.domain.exception.NotFoundException;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
+import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Error;
 import io.micronaut.http.annotation.Produces;
-import io.micronaut.http.annotation.Controller;
-import java.time.Instant;
+import io.micronaut.http.exceptions.HttpStatusException;
+import jakarta.validation.ConstraintViolationException;
+import java.util.UUID;
 
 @Produces
 @Controller
 public class ApiExceptionHandler {
 
     @Error(global = true, exception = NotFoundException.class)
-    public HttpResponse<ApiError> handleNotFound(HttpRequest<?> request, NotFoundException exception) {
-        return HttpResponse.status(HttpStatus.NOT_FOUND)
-            .body(ApiError.of(HttpStatus.NOT_FOUND, exception.getMessage(), request.getPath()));
+    public HttpResponse<ApiProblem> handleNotFound(HttpRequest<?> request, NotFoundException exception) {
+        return respond(request, HttpStatus.NOT_FOUND, "TASK_NOT_FOUND", exception.getMessage());
     }
 
     @Error(global = true, exception = InvalidTaskTransitionException.class)
-    public HttpResponse<ApiError> handleConflict(HttpRequest<?> request, InvalidTaskTransitionException exception) {
-        return HttpResponse.status(HttpStatus.CONFLICT)
-            .body(ApiError.of(HttpStatus.CONFLICT, exception.getMessage(), request.getPath()));
+    public HttpResponse<ApiProblem> handleConflict(HttpRequest<?> request, InvalidTaskTransitionException exception) {
+        return respond(request, HttpStatus.CONFLICT, "INVALID_TASK_TRANSITION", exception.getMessage());
+    }
+
+    @Error(global = true, exception = ConstraintViolationException.class)
+    public HttpResponse<ApiProblem> handleValidation(HttpRequest<?> request, ConstraintViolationException exception) {
+        return respond(request, HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", exception.getMessage());
     }
 
     @Error(global = true, exception = IllegalArgumentException.class)
-    public HttpResponse<ApiError> handleBadRequest(HttpRequest<?> request, IllegalArgumentException exception) {
-        return HttpResponse.badRequest(ApiError.of(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getPath()));
+    public HttpResponse<ApiProblem> handleBadRequest(HttpRequest<?> request, IllegalArgumentException exception) {
+        return respond(request, HttpStatus.BAD_REQUEST, "BAD_REQUEST", exception.getMessage());
     }
 
-    public record ApiError(Instant timestamp, int status, String error, String message, String path) {
-        static ApiError of(HttpStatus status, String message, String path) {
-            return new ApiError(Instant.now(), status.getCode(), status.getReason(), message, path);
-        }
+    @Error(global = true, exception = HttpStatusException.class)
+    public HttpResponse<ApiProblem> handleHttpStatus(HttpRequest<?> request, HttpStatusException exception) {
+        HttpStatus status = exception.getStatus();
+        return respond(request, status, "HTTP_" + status.getCode(), exception.getMessage());
+    }
+
+    @Error(global = true, exception = Exception.class)
+    public HttpResponse<ApiProblem> handleUnknown(HttpRequest<?> request, Exception exception) {
+        return respond(request, HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "An unexpected error occurred");
+    }
+
+    private HttpResponse<ApiProblem> respond(HttpRequest<?> request, HttpStatus status, String code, String detail) {
+        String correlationId = request.getHeaders().get("X-Correlation-Id", UUID.randomUUID().toString());
+        ApiProblem body = new ApiProblem(
+            "https://api.agent-tracker/errors/" + code.toLowerCase(),
+            status.getReason(),
+            status.getCode(),
+            detail,
+            request.getPath(),
+            code,
+            correlationId
+        );
+        return HttpResponse.status(status)
+            .header("X-Correlation-Id", correlationId)
+            .body(body);
+    }
+
+    public record ApiProblem(
+        String type,
+        String title,
+        int status,
+        String detail,
+        String instance,
+        String code,
+        String correlationId
+    ) {
     }
 }

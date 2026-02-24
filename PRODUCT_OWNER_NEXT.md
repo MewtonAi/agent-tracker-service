@@ -1,6 +1,12 @@
 # PRODUCT_OWNER_NEXT.md
 
 Last updated: 2026-02-23 (PST)
+
+## Implementation Checkpoint (Dev Run 2026-02-23 20:08 PST)
+- ✅ P0.1 aligned in code/docs: canonical v1 is **Task-only** with statuses `NEW, IN_PROGRESS, BLOCKED, DONE, CANCELED`.
+- ✅ P0.2 core application services shipped: `TaskCommandService`, `TaskQueryService`, centralized transition policy, in-memory idempotency handling.
+- ✅ P0.3 minimal REST shipped: `POST /v1/tasks`, `GET /v1/tasks/{id}`, `GET /v1/tasks`, `PATCH /v1/tasks/{id}/status` + RFC7807-style error body and correlation ID echo.
+- ⏭️ Next highest priority remains P0.4 Mongo persistence adapter + indexes + optimistic locking.
 Owner: Product/Architecture
 
 ## Current Delivery Snapshot (code-verified)

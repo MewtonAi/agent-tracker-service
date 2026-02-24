@@ -6,11 +6,11 @@ import io.micronaut.serde.annotation.Serdeable;
 
 @Serdeable
 public record CreateTaskCommand(
-    String projectId,
     String title,
     String description,
     TaskType taskType,
     TaskPriority priority,
-    String createdBy
+    String createdBy,
+    String idempotencyKey
 ) {
 }

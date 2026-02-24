@@ -10,7 +10,6 @@ import io.micronaut.serde.annotation.Serdeable;
 @Serdeable
 public record TaskResponse(
     String taskId,
-    String projectId,
     String title,
     String description,
     TaskType taskType,
