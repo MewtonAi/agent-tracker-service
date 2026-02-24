@@ -118,6 +118,49 @@ class TaskControllerTest {
     }
 
     @Test
+    void shouldEchoCorrelationIdAcrossRestErrorPaths() {
+        String correlationId = "corr-rest-matrix-1";
+
+        HttpClientResponseException notFound = assertThrows(HttpClientResponseException.class, () ->
+            client.toBlocking().exchange(
+                HttpRequest.GET("/v1/tasks/missing-correlation").header("X-Correlation-Id", correlationId),
+                Map.class
+            )
+        );
+
+        HttpClientResponseException badRequest = assertThrows(HttpClientResponseException.class, () ->
+            client.toBlocking().exchange(
+                HttpRequest.GET("/v1/tasks?status=invalid").header("X-Correlation-Id", correlationId),
+                Map.class
+            )
+        );
+
+        TaskResponse created = client.toBlocking().retrieve(
+            HttpRequest.POST("/v1/tasks", new CreateTaskRequest("Corr", "desc", TaskType.FEATURE, TaskPriority.HIGH, "qa"))
+                .header("Idempotency-Key", "rest-correlation-create-1"),
+            TaskResponse.class
+        );
+
+        HttpClientResponseException conflict = assertThrows(HttpClientResponseException.class, () ->
+            client.toBlocking().exchange(
+                HttpRequest.PATCH("/v1/tasks/" + created.taskId() + "/status", new UpdateTaskStatusRequest(TaskStatus.DONE, "qa"))
+                    .header("Idempotency-Key", "rest-correlation-conflict-1")
+                    .header("X-Correlation-Id", correlationId),
+                Map.class
+            )
+        );
+
+        assertEquals(correlationId, notFound.getResponse().getHeaders().get("X-Correlation-Id"));
+        assertEquals(correlationId, notFound.getResponse().getBody(Map.class).orElseThrow().get("correlationId"));
+
+        assertEquals(correlationId, badRequest.getResponse().getHeaders().get("X-Correlation-Id"));
+        assertEquals(correlationId, badRequest.getResponse().getBody(Map.class).orElseThrow().get("correlationId"));
+
+        assertEquals(correlationId, conflict.getResponse().getHeaders().get("X-Correlation-Id"));
+        assertEquals(correlationId, conflict.getResponse().getBody(Map.class).orElseThrow().get("correlationId"));
+    }
+
+    @Test
     void shouldRejectIdempotencyKeyReuseWithDifferentPayload() {
         client.toBlocking().retrieve(
             HttpRequest.POST("/v1/tasks", new CreateTaskRequest("Original", "desc", TaskType.FEATURE, TaskPriority.HIGH, "qa"))

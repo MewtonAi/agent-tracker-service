@@ -19,6 +19,7 @@ import jakarta.inject.Singleton;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 @Singleton
 public class TaskMcpTools {
@@ -74,22 +75,23 @@ public class TaskMcpTools {
     }
 
     private static <T> T run(CheckedSupplier<T> supplier) {
+        String correlationId = UUID.randomUUID().toString();
         try {
             return supplier.get();
         } catch (NotFoundException exception) {
-            throw new McpToolException("TASK_NOT_FOUND", exception.getMessage(), exception);
+            throw new McpToolException("TASK_NOT_FOUND", exception.getMessage(), correlationId, exception);
         } catch (InvalidTaskTransitionException exception) {
-            throw new McpToolException("INVALID_TASK_TRANSITION", exception.getMessage(), exception);
+            throw new McpToolException("INVALID_TASK_TRANSITION", exception.getMessage(), correlationId, exception);
         } catch (ConcurrentModificationException exception) {
-            throw new McpToolException("CONCURRENT_MODIFICATION", exception.getMessage(), exception);
+            throw new McpToolException("CONCURRENT_MODIFICATION", exception.getMessage(), correlationId, exception);
         } catch (IdempotencyKeyReuseMismatchException exception) {
-            throw new McpToolException("IDEMPOTENCY_KEY_REUSE_MISMATCH", exception.getMessage(), exception);
+            throw new McpToolException("IDEMPOTENCY_KEY_REUSE_MISMATCH", exception.getMessage(), correlationId, exception);
         } catch (ConflictException exception) {
-            throw new McpToolException("TASK_CONFLICT", exception.getMessage(), exception);
+            throw new McpToolException("TASK_CONFLICT", exception.getMessage(), correlationId, exception);
         } catch (IllegalArgumentException exception) {
-            throw new McpToolException("BAD_REQUEST", exception.getMessage(), exception);
+            throw new McpToolException("BAD_REQUEST", exception.getMessage(), correlationId, exception);
         } catch (Exception exception) {
-            throw new McpToolException("INTERNAL_ERROR", "An unexpected error occurred", exception);
+            throw new McpToolException("INTERNAL_ERROR", "An unexpected error occurred", correlationId, exception);
         }
     }
 

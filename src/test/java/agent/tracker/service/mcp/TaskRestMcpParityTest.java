@@ -18,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -130,5 +132,42 @@ class TaskRestMcpParityTest {
 
         TaskMcpTools.ListTasksToolResponse mcpList = mcpTools.listTasks(new TaskMcpTools.ListTasksToolRequest("in_progress"));
         assertTrue(mcpList.tasks().stream().anyMatch(task -> task.taskId().equals(mcpUpdated.taskId())));
+    }
+
+    @Test
+    void shouldAttachCorrelationIdAcrossMcpErrorPaths() {
+        McpToolException badRequest = assertThrows(McpToolException.class, () -> mcpTools.getTask(null));
+        assertEquals("BAD_REQUEST", badRequest.getCode());
+        assertNotNull(badRequest.getCorrelationId());
+        assertFalse(badRequest.getCorrelationId().isBlank());
+
+        McpToolException notFound = assertThrows(McpToolException.class, () ->
+            mcpTools.getTask(new TaskMcpTools.GetTaskToolRequest("missing-correlation"))
+        );
+        assertEquals("TASK_NOT_FOUND", notFound.getCode());
+        assertNotNull(notFound.getCorrelationId());
+        assertFalse(notFound.getCorrelationId().isBlank());
+
+        mcpTools.createTask(new TaskMcpTools.CreateTaskToolRequest(
+            "Correlation mismatch",
+            "desc",
+            TaskType.FEATURE,
+            TaskPriority.HIGH,
+            "qa",
+            "parity-mcp-correlation-mismatch-1"
+        ));
+        McpToolException mismatch = assertThrows(McpToolException.class, () ->
+            mcpTools.createTask(new TaskMcpTools.CreateTaskToolRequest(
+                "Correlation mismatch changed",
+                "desc",
+                TaskType.FEATURE,
+                TaskPriority.HIGH,
+                "qa",
+                "parity-mcp-correlation-mismatch-1"
+            ))
+        );
+        assertEquals("IDEMPOTENCY_KEY_REUSE_MISMATCH", mismatch.getCode());
+        assertNotNull(mismatch.getCorrelationId());
+        assertFalse(mismatch.getCorrelationId().isBlank());
     }
 }
