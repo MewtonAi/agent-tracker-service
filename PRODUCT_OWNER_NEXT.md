@@ -1,21 +1,21 @@
 # PRODUCT_OWNER_NEXT.md
 
-Last updated: 2026-02-24 (PST, architecture/product refresh)
+Last updated: 2026-02-24 (PST, product/architecture continuity pass)
 Owner: Product/Architecture
 
 ## 1) Latest inspection snapshot (code/docs/tests/CI)
 
 ### Repo state validated
-- ✅ REST + MCP task surfaces are implemented and parity-tested via shared application services.
-- ✅ Pagination envelope is live in code (`limit`, `cursor`, `nextCursor`) with deterministic ordering policy (`updatedAt DESC, taskId DESC`).
-- ✅ MCP correlation behavior is implemented with UUID canonicalization/fallback in `TaskMcpTools`.
-- ✅ CI contract gate remains `./gradlew check` on JDK 21 (`.github/workflows/ci.yml`).
-- ✅ Contract tests exist for parity, OpenAPI snapshot, error catalog, MCP runtime handshake, and idempotency telemetry.
+- ✅ REST + MCP task surfaces remain parity-tested via shared application services.
+- ✅ Store-level pagination seam is now implemented (`TaskStore#listTasksPage`) and wired through Mongo `Pageable` + `Slice`.
+- ✅ Deterministic ordering contract is implemented in Mongo path (`updatedAt DESC, taskId DESC`) per canonical ADR-013.
+- ✅ MCP correlation canonicalization/fallback behavior is implemented in `TaskMcpTools` and governed by canonical ADR-012.
+- ✅ CI gate remains minimal and clear: `./gradlew check` on JDK 21 (`.github/workflows/ci.yml`).
 
-### Risks / unresolved verification
-- ⚠️ Local test execution blocked in this environment (`java`/`JAVA_HOME` unavailable), so current run is docs/architecture-only.
-- ⚠️ `openapi/openapi.yaml` appears stale relative to shipped pagination fields (no cursor/limit/nextCursor markers present in snapshot file).
-- ⚠️ ADR ambiguity detected: duplicate IDs for ADR-012 and ADR-013 (now governed by ADR-014 with canonical source policy).
+### Active risks / unresolved verification
+- ⚠️ Local execution is blocked in this shell (`java`/`JAVA_HOME` unavailable), so test/CI verification could not be re-run in this pass.
+- ⚠️ `openapi/openapi.yaml` appears stale relative to shipped pagination contract (`limit`, `cursor`, `nextCursor`) and likely fails current marker assertions.
+- ⚠️ Offset cursor remains the external token shape today; scale posture is improved by store paging but still needs documented evolution path for very large offsets.
 
 ---
 
@@ -23,15 +23,15 @@ Owner: Product/Architecture
 
 ## P1 — Immediate release confidence
 
-### EPIC P1-G: Contract governance completion
+### EPIC P1-G: Contract governance + release gate confidence
 1. **TKT-P1-G15 — OpenAPI snapshot reconciliation + CI green confirmation** *(next coding slice)*
 2. **TKT-P1-G17 — ADR canonicalization cleanup and reference hygiene**
 
-### EPIC P1-A: Query scale hardening
-3. **TKT-P1-A16 — Store-level pagination optimization with contract-preserving cursor semantics**
+### EPIC P1-A: Pagination durability at scale
+3. **TKT-P1-A18 — Cursor evolution readiness (dual-decode strategy + compatibility tests)**
 
 ## P2 — Short-horizon platform hardening
-- Authentication/tenant boundaries
+- Authn/authz and tenant boundaries
 - Domain event/outbox shape for downstream integrations
 - Archive/retention lifecycle policy
 
@@ -41,78 +41,75 @@ Owner: Product/Architecture
 
 ### TKT-P1-G15 — OpenAPI snapshot reconciliation + CI green confirmation
 **Goal**  
-Restore strict OpenAPI contract gate alignment with currently shipped REST contract.
+Restore strict OpenAPI gate alignment with currently shipped REST contract.
 
 **Scope**
 - Run on Java 21 environment:
   - `./gradlew updateOpenApiSnapshot`
   - `./gradlew check`
 - Commit regenerated `openapi/openapi.yaml`.
-- Verify snapshot includes task-list pagination query/response fields (`limit`, `cursor`, `nextCursor`).
+- Verify snapshot includes task-list pagination query/response markers (`limit`, `cursor`, `nextCursor`).
 
 **Acceptance criteria**
 - `verifyOpenApiSnapshot` passes with strict equality.
 - `OpenApiSnapshotContractTest` passes marker assertions.
-- CI workflow completes green on PR branch.
+- CI workflow is green on PR branch.
 
 ---
 
 ### TKT-P1-G17 — ADR canonicalization cleanup and reference hygiene
 **Goal**  
-Eliminate policy ambiguity from duplicate ADR numbering and make canonical contract sources explicit.
+Finish elimination of ADR ambiguity and ensure active references resolve only to canonical files.
 
 **Scope**
-- Apply ADR-014 policy to existing docs and references.
-- Ensure superseded ADRs are labeled as historical only.
-- Update any docs/tests still pointing at superseded ADR variants.
+- Apply ADR-014 policy consistently in docs and planning notes.
+- Ensure superseded ADRs are clearly historical and contain explicit forward pointers.
+- Remove any remaining references to superseded ADR variants as active policy.
 
 **Acceptance criteria**
-- Exactly one canonical ADR filename is referenced per active topic in architecture/product docs.
-- Superseded ADRs include explicit forward pointers to canonical files.
-- No new planning docs reference superseded ADR variants as active policy.
+- Exactly one canonical ADR filename is referenced per active contract topic in architecture/product docs.
+- Superseded ADRs keep explicit “superseded by” pointers.
+- No newly merged planning docs reintroduce duplicate-active ADR references.
 
 ---
 
-### TKT-P1-A16 — Store-level pagination optimization with contract-preserving cursor semantics
+### TKT-P1-A18 — Cursor evolution readiness (dual-decode strategy + compatibility tests)
 **Goal**  
-Improve list performance at scale while preserving REST/MCP external contract.
+Prepare a safe evolution path from pure offset cursor tokens to future seek-style tokens without REST/MCP breaking changes.
 
 **Scope**
-- Move from full-list then slice toward DB/store-backed page reads.
-- Keep current response envelope and validation semantics unchanged.
-- Preserve deterministic ordering contract (`updatedAt DESC, taskId DESC`).
-- Maintain parity coverage across REST and MCP.
+- Implement cursor parser that accepts current offset cursor and an extensible prefixed token format.
+- Preserve response envelope names (`tasks`, `nextCursor`) and existing behavior for offset callers.
+- Add transport-parity tests for mixed cursor formats and terminal page semantics.
+- Document migration constraints in architecture + ADR-015.
 
 **Acceptance criteria**
-- Data path avoids loading all filtered rows before page slicing on Mongo-backed store.
-- Existing clients observe unchanged API/tool behavior for default and explicit paging.
-- Parity tests include multi-page progression and terminal `nextCursor=null` behavior.
-- Architecture docs describe old vs new paging internals and migration safety.
+- Existing offset cursor clients remain fully backward compatible.
+- Invalid cursor formats still map to bad request behavior.
+- REST and MCP pagination parity tests cover legacy + prefixed token paths.
+- Docs explicitly define that cursor field is opaque and format-evolvable.
 
 ---
 
 ## 4) Recommended execution order
 1. **Slice 1:** TKT-P1-G15 (OpenAPI reconciliation + CI confidence)
 2. **Slice 2:** TKT-P1-G17 (ADR/source-of-truth cleanup pass)
-3. **Slice 3:** TKT-P1-A16 (store-level pagination optimization)
+3. **Slice 3:** TKT-P1-A18 (cursor evolution readiness)
 
 ## 5) Active risk register
-- OpenAPI snapshot drift can continue to block merge confidence until regenerated under Java 21.
-- Offset-style cursor remains vulnerable to large-offset performance degradation until store-level paging is implemented.
-- Contract ambiguity may reappear if duplicate ADR numbering is not kept under ADR-014 governance.
+- OpenAPI drift remains the primary near-term merge/release risk until regenerated on Java 21.
+- Lack of local Java runtime in current environment prevents immediate red/green confirmation.
+- Large-offset pagination can still degrade over time unless cursor evolution work lands.
 
 ## 6) Developer handoff anchor points
 - Canonical CI gate: `./gradlew check` (JDK 21).
 - Canonical MCP correlation policy: `ADR-012-mcp-correlation-id-canonicalization-policy.md`.
-- Canonical pagination policy: `ADR-013-task-list-pagination-ordering-contract.md`.
-- Canonical governance for duplicates/supersession: `ADR-014-contract-source-of-truth-and-supersession-policy.md`.
+- Canonical pagination ordering policy: `ADR-013-task-list-pagination-ordering-contract.md`.
+- Canonical supersession governance: `ADR-014-contract-source-of-truth-and-supersession-policy.md`.
+- New cursor evolution strategy: `ADR-015-cursor-token-evolution-and-backward-compatibility.md`.
 
-## 7) 2026-02-24 developer run delta (subagent)
-- Implemented store-level page retrieval contract in application boundary via `TaskStore#listTasksPage(TaskStatus, offset, limit)` and `TaskStorePage`.
-- Rewired `TaskQueryService` to use store-provided page windows (no service-layer full-list slicing).
-- Added Mongo paged read path using `Pageable` + `Slice` with deterministic sort (`updatedAt DESC`, `taskId DESC`).
-- Extended tests:
-  - `TaskQueryServiceTest` now verifies delegation to store paging window.
-  - `MongoTaskStoreIntegrationTest` now verifies cursor paging (`nextCursor` progression and terminal `null`).
-- Reliability hardening: duplicate idempotency-key detection now scans nested exception causes; duplicate insert race is debug-logged.
-- OpenAPI snapshot regeneration/check still blocked in this shell (Java 21/JAVA_HOME absent).
+## 7) Delta captured in this pass
+- Rebased planning posture to treat store-level pagination optimization as completed baseline.
+- Added forward-looking ticket (TKT-P1-A18) for cursor token evolution compatibility.
+- Added ADR-015 to make cursor evolution contract explicit before implementation.
+- Refreshed handoff sequence to focus next coding slice on OpenAPI gate recovery first.

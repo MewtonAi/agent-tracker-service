@@ -1,32 +1,31 @@
-# Developer Handoff — REST + MCP Readiness (Post-inspection planning pass)
+# Developer Handoff — REST + MCP Readiness
 
-Last updated: 2026-02-24 (PST)
+Last updated: 2026-02-24 (PST, product/architecture continuity)
 
-## What was done in this pass
-- Performed architecture/product inspection across code, tests, CI workflow, and planning docs.
-- Refined prioritized backlog and execution order in `PRODUCT_OWNER_NEXT.md`.
-- Added ADR governance decision:
-  - `ADR-014-contract-source-of-truth-and-supersession-policy.md`
-- Marked duplicate interim ADRs as superseded/historical:
-  - `ADR-012-mcp-correlation-id-precedence-and-fallback.md` → superseded by canonical ADR-012 file
-  - `ADR-013-task-list-pagination-contract-v1-offset-cursor.md` → superseded by canonical ADR-013 file
-- Updated architecture/readme references to canonical contract ADR files.
+## What was accomplished in this pass
+- Re-inspected code/docs/CI status for current REST + MCP readiness.
+- Updated prioritized backlog and ticket quality in `PRODUCT_OWNER_NEXT.md`.
+- Added new decision record:
+  - `ADR-015-cursor-token-evolution-and-backward-compatibility.md`
+- Refreshed architecture/readme to align with current priorities and ADR references.
 
-## Current truth (for next coding slice)
+## Current state to assume
 1. **CI gate:** `./gradlew check` on JDK 21.
-2. **Top blocker:** OpenAPI snapshot appears stale versus shipped pagination contract; needs Java 21 regen + commit.
-3. **Canonical policy docs:**
-   - MCP correlation: `ADR-012-mcp-correlation-id-canonicalization-policy.md`
+2. **Primary blocker:** OpenAPI snapshot likely stale vs shipped pagination fields and should be regenerated under Java 21.
+3. **Pagination internals:** store-level paging seam is already implemented (`TaskStore#listTasksPage` + Mongo `Pageable`/`Slice`).
+4. **Canonical ADR set for active work:**
+   - Correlation policy: `ADR-012-mcp-correlation-id-canonicalization-policy.md`
    - Pagination ordering: `ADR-013-task-list-pagination-ordering-contract.md`
-   - ADR supersession governance: `ADR-014-contract-source-of-truth-and-supersession-policy.md`
+   - Supersession governance: `ADR-014-contract-source-of-truth-and-supersession-policy.md`
+   - Cursor evolution compatibility: `ADR-015-cursor-token-evolution-and-backward-compatibility.md`
 
-## Next coding slice (implementation order)
-1. Run Java 21 local/CI-compatible verification:
+## Next coding slice (recommended order)
+1. Run Java 21 verification and snapshot reconciliation:
    - `./gradlew updateOpenApiSnapshot`
    - `./gradlew check`
-   - commit regenerated `openapi/openapi.yaml`
-2. Complete ADR reference hygiene where any stale links remain.
-3. Start store-level pagination optimization while preserving external `limit/cursor/nextCursor` contract.
+   - commit `openapi/openapi.yaml` if regenerated
+2. Complete any remaining ADR reference hygiene if stale links are discovered.
+3. Start ADR-015 implementation slice (dual cursor decode + parity tests) without changing external envelope names.
 
-## Environment caveat
-- This shell has no `java` available (`JAVA_HOME` missing), so no local test execution happened in this pass.
+## Environment caveat for this run
+- No local Java runtime available in this shell (`java` and `JAVA_HOME` missing), so tests/verification were not executed in this pass.
