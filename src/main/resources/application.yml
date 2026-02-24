@@ -1,6 +1,16 @@
 micronaut:
   application:
     name: agent-tracker-service
+  metrics:
+    enabled: true
+    export:
+      prometheus:
+        enabled: true
+  server:
+    endpoints:
+      all:
+        enabled: true
+        sensitive: false
   mcp:
     server:
       info:
