@@ -14,9 +14,10 @@ Current implementation snapshot:
 - RFC7807-style API error contract with stable `code` and `correlationId`
 
 ## Next priorities
-1. Mongo persistence adapter + indexes + optimistic locking
-2. REST/MCP parity through shared service layer
-3. OpenAPI generation/check-in pipeline
+1. Contract hardening: concurrency error-code lock + invalid status input normalization
+2. Durable idempotency v2: `(operation,key)` uniqueness, payload hash policy, TTL retention
+3. MCP tool delivery (`create_task`, `get_task`, `list_tasks`, `update_task_status`) + REST/MCP parity suite
+4. OpenAPI generation/check-in + CI contract drift gate
 
 ## Local validation
 Run:

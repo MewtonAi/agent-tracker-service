@@ -1,61 +1,50 @@
-# Developer Handoff — Next Execution Slice (REST + MCP MVP)
+# Developer Handoff — REST + MCP MVP (Updated)
 
-## Objective
-Deliver production-safe mutation semantics and persistence baseline without changing external v1 REST shapes.
+Last updated: 2026-02-23 (PST)
 
-## Canonical guardrails (do not violate)
-- v1 scope: Task-only.
-- Lifecycle: `NEW, IN_PROGRESS, BLOCKED, DONE, CANCELED`.
-- Transition policy is domain-owned and adapter-agnostic.
-- REST and MCP must call shared application services.
+## What changed in product/architecture docs this run
+- Re-baselined architecture and backlog against current code (not prior assumptions).
+- Confirmed shipped vs missing for REST + Mongo + MCP parity.
+- Converted backlog into implementation-ready tickets with acceptance criteria.
+- Highlighted contract drifts that should be resolved before MCP rollout.
 
-## Priority work package (in order)
+## Current baseline (code reality)
+- REST v1 task endpoints are active and domain lifecycle is enforced.
+- Mongo adapter exists and supports optimistic locking via `@Version`.
+- In-memory remains default unless `task.store=mongo` is set.
+- MCP dependency exists but no tool handlers are implemented yet.
 
-### 1) Mongo persistence adapter (P0-A1/A2)
-- Introduce `TaskDocument` + mapper.
-- Replace `InMemoryTaskStore` wiring with repository abstraction.
-- Add indexes:
-  - `{ status: 1, updatedAt: -1 }`
-  - `{ updatedAt: -1 }`
+## Highest-priority next coding slice (do this next)
 
-**Definition of done**
-- Existing API tests pass with persistence-backed implementation.
-- Integration test verifies create/get/list/update-status against Mongo.
+### 1) Harden external mutation contract
+1. Lock a single concurrency conflict code (recommend `CONCURRENT_MODIFICATION`).
+2. Normalize invalid status filter behavior to stable 400 error response.
+3. Define/idempotency mismatch policy for same key with different payload.
 
-### 2) Optimistic locking + durable idempotency (P0-A3/B1/B2)
-- Add `version` to persisted task.
-- Add `idempotency_records` collection with unique `(operation,key)` and TTL.
-- Enforce required idempotency key for mutating operations.
+### 2) Complete durable idempotency
+1. Evolve record schema to include `operation`, `payloadHash`, `resultRef`, `expiresAt`.
+2. Add unique index on `(operation, key)` + TTL index on `expiresAt`.
+3. Add integration tests for replay and mismatch rejection.
 
-**Definition of done**
-- Concurrent status updates produce deterministic 409 with stable code.
-- Replay of same key returns original logical result after restart.
-- Missing key => 400 with stable code.
+### 3) Deliver MCP parity
+1. Implement tools: `create_task`, `get_task`, `list_tasks`, `update_task_status`.
+2. Build parity test harness to execute equivalent REST and MCP scenarios.
 
-### 3) MCP MVP tool adapter + parity suite (P0-C1/C2)
-- Implement tools:
-  - `create_task`
-  - `get_task`
-  - `list_tasks`
-  - `update_task_status`
-- Keep handlers thin; map request/response only.
+## Suggested concrete ticket cut (engineering)
+- **T1:** error-code lock + tests + doc sync
+- **T2:** safe status parser/validator + controller tests
+- **T3:** idempotency schema v2 + migration/index bootstrap updates
+- **T4:** replay/mismatch integration tests + observability logs
+- **T5:** MCP tool handlers (thin adapter only)
+- **T6:** parity test suite in CI
+- **T7:** OpenAPI snapshot + diff gate
 
-**Definition of done**
-- Parity tests prove REST and MCP equivalence for happy + error paths.
+## Critical edge cases to explicitly test
+- `GET /v1/tasks?status=INVALID`
+- retry same idempotency key + same payload
+- retry same idempotency key + different payload
+- concurrent status updates on same task
+- replay behavior across service restart (mongo-backed)
 
-### 4) Contract hardening (P0-D1/D2)
-- Generate/check in OpenAPI.
-- Lock error catalog with regression tests.
-
-## Suggested ticket cut for immediate execution
-- T1: repository abstraction + Mongo `TaskDocument` + mapper + wiring
-- T2: index bootstrap + integration tests for list/order behavior
-- T3: `version` conflict implementation + tests
-- T4: durable idempotency records + replay tests
-- T5: MCP 4-tool adapter + parity scenarios
-- T6: OpenAPI snapshot + contract diff gate
-
-## Known edge cases to resolve explicitly
-- Invalid `status` query value in REST list should map to stable 400 contract (avoid framework-default inconsistency).
-- Same `(operation,key)` with different payload policy must be explicit and tested.
-- Same-state transition currently treated as no-op; keep or reject, but document and lock tests.
+## Developer note
+Before implementing MCP tools, finish T1–T4 first so MCP inherits stable mutation semantics and error vocabulary from the start.

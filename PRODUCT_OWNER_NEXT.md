@@ -3,159 +3,165 @@
 Last updated: 2026-02-23 (PST)
 Owner: Product/Architecture
 
-## Implementation Checkpoint (code-verified)
+## 1) Code-verified implementation snapshot
 
-### What is shipped now
+### Shipped now
 - ✅ Canonical v1 scope is **Task-only**.
 - ✅ Canonical lifecycle in code: `NEW, IN_PROGRESS, BLOCKED, DONE, CANCELED`.
-- ✅ Transition policy implemented and enforced:
-  - `NEW -> IN_PROGRESS | CANCELED`
-  - `IN_PROGRESS -> BLOCKED | DONE | CANCELED`
-  - `BLOCKED -> IN_PROGRESS | CANCELED`
-  - `DONE` and `CANCELED` terminal
-- ✅ REST endpoints implemented:
-  - `POST /v1/tasks` (requires `Idempotency-Key`)
+- ✅ Transition policy enforcement is implemented.
+- ✅ REST endpoints shipped:
+  - `POST /v1/tasks` (Idempotency-Key required)
   - `GET /v1/tasks/{id}`
   - `GET /v1/tasks?status=`
-  - `PATCH /v1/tasks/{id}/status` (requires `Idempotency-Key`)
-- ✅ RFC7807-style error contract with stable `code` and `correlationId`.
-- ✅ In-memory idempotency replay behavior exists for create/status-update mutations.
+  - `PATCH /v1/tasks/{id}/status` (Idempotency-Key required)
+- ✅ RFC7807-style API error envelope + correlation ID support.
+- ✅ Mongo persistence seam and adapter exist (`task.store=mongo`).
+- ✅ `TaskDocument` has `@Version` optimistic locking field.
+- ✅ Mongo integration test covers persistence + basic idempotent replay behavior.
 
-### What is not shipped yet (MVP blockers)
-- 🟡 Durable Mongo persistence adapter (seam + adapter/repositories implemented; concurrency behavior still needs verification hardening)
-- ❌ Optimistic locking with deterministic conflict semantics on concurrent writes
-- 🟡 Durable idempotency record store (Mongo-backed records implemented, duplicate-key/error mapping needs hardening)
-- ❌ MCP tool surface (`create_task`, `get_task`, `list_tasks`, `update_task_status`)
-- ❌ Automated REST/MCP parity suite in CI
-- ❌ OpenAPI generation + contract lock pipeline
+### Not shipped / not release-safe yet
+- ❌ MCP tool surface not implemented (`create_task`, `get_task`, `list_tasks`, `update_task_status`).
+- ❌ REST/MCP parity suite not implemented.
+- 🟡 Durable idempotency model is partial (key only; no operation + payload fingerprint + TTL policy).
+- 🟡 Conflict semantics not fully hardened (current code: `TASK_CONFLICT`; ADR target suggests `CONCURRENT_MODIFICATION`).
+- 🟡 Index strategy/docs drift: architecture target and actual initializer differ.
+- 🟡 Invalid `status` query handling is framework-leaky (`TaskStatus.valueOf`) and needs explicit contract mapping.
+- ❌ OpenAPI generation/snapshot/diff gate missing.
 
 ---
 
-## Prioritized backlog (REST + MCP readiness)
+## 2) Prioritized roadmap (REST + MCP readiness)
 
 ## P0 — MVP release gate
 
-### EPIC P0-A — Durable Task Store (Mongo)
-**Outcome:** Replace in-memory store with durable, query-ready persistence while preserving service semantics.
+### EPIC P0-A: Mutation correctness + contract hardening
+Goal: deterministic, documented mutation behavior under retries and concurrency.
 
-#### TKT-P0-A1 — Mongo task document + repository adapter
-**Scope**
-- Introduce Mongo `TaskDocument` and mapping layer.
-- Implement persistence-backed repository used by `TaskCommandService` and `TaskQueryService`.
+1. **TKT-P0-A1 — Concurrency error contract lock**
+   - Decide and lock one stable 409 code for optimistic-lock conflicts.
+   - Recommended: `CONCURRENT_MODIFICATION`.
+   - Add tests + docs alignment.
 
-**Acceptance criteria**
-- Task fields round-trip without loss.
-- Existing REST tests remain green with Mongo-backed wiring.
-- Integration tests run against test Mongo (Testcontainers or equivalent).
+2. **TKT-P0-A2 — Explicit status filter validation**
+   - Replace raw `TaskStatus.valueOf` leak with adapter-level validation/mapping.
+   - Invalid enum input must return stable 400 shape/code.
 
-#### TKT-P0-A2 — Index policy for current query paths
-**Scope**
-- Create indexes for current and near-term list/query patterns.
+3. **TKT-P0-A3 — Same-key different-payload policy**
+   - Define behavior for idempotency-key reuse with divergent payload.
+   - Recommended: reject with 409 and explicit code (e.g., `IDEMPOTENCY_KEY_REUSE_MISMATCH`).
 
-**Acceptance criteria**
-- Indexes defined and auto-provisioned on startup/migration:
-  - `{ status: 1, updatedAt: -1 }`
-  - `{ updatedAt: -1 }`
-- Index strategy documented with rationale and expected query use.
+### EPIC P0-B: Durable idempotency completion
+Goal: production-safe replay behavior across restarts/replicas.
 
-#### TKT-P0-A3 — Optimistic locking
-**Scope**
-- Add version field and compare-and-set update behavior.
+4. **TKT-P0-B1 — Idempotency record schema v2**
+   - Add fields: `operation`, `payloadHash`, `resultRef`, `expiresAt`, timestamps.
+   - Keep unique constraint on `(operation, key)`.
 
-**Acceptance criteria**
-- Concurrent updates to same task produce deterministic conflict (HTTP 409).
-- Conflict path covered by integration tests.
-- Error code stable (`CONCURRENT_MODIFICATION` or equivalent documented code).
+5. **TKT-P0-B2 — TTL + retention policy**
+   - Add TTL index on `expiresAt`.
+   - Make retention configurable (default: 48h).
 
----
+6. **TKT-P0-B3 — Replay observability**
+   - Emit structured logs/metrics for `first_write`, `replay_hit`, `mismatch_reject`.
 
-### EPIC P0-B — Durable Idempotency Contract
-**Outcome:** Safe retry semantics for distributed clients and adapters.
+### EPIC P0-C: MCP parity delivery
+Goal: agent-native interface with identical business semantics.
 
-#### TKT-P0-B1 — Idempotency record model + storage
-**Scope**
-- Persist idempotency records keyed by operation scope.
-- Enforce uniqueness and replay semantics.
+7. **TKT-P0-C1 — Implement 4 MCP tools via shared services**
+8. **TKT-P0-C2 — Cross-adapter parity test harness** (REST vs MCP scenario equivalence)
 
-**Acceptance criteria**
-- Duplicate create/status mutation with same key returns original logical result.
-- Records survive process restart.
-- TTL/retention policy documented (recommended 24-72h, configurable).
+### EPIC P0-D: Contract governance
+Goal: minimize accidental breaking changes.
 
-#### TKT-P0-B2 — Validation + observability
-**Scope**
-- Harden request validation and logging around idempotency and correlation IDs.
+9. **TKT-P0-D1 — OpenAPI generation + checked-in snapshot + CI diff gate**
+10. **TKT-P0-D2 — Error catalog and regression tests**
 
-**Acceptance criteria**
-- Missing/blank key returns 400 with stable error code.
-- Replay vs first-write clearly observable in logs/metrics.
-- Correlation ID appears on all error responses.
-
----
-
-### EPIC P0-C — MCP Adapter with REST Parity
-**Outcome:** Agent-native interface with equivalent behavior to REST.
-
-#### TKT-P0-C1 — Implement MVP MCP tools
-Tools: `create_task`, `get_task`, `list_tasks`, `update_task_status`
-
-**Acceptance criteria**
-- Tool schemas mirror REST constraints (required fields/status validation).
-- Tool handlers call shared application services only.
-- Tool tests cover happy path + not-found + invalid transition conflict.
-
-#### TKT-P0-C2 — Parity scenario suite
-**Scope**
-- Build cross-adapter test harness for equivalent command sequences.
-
-**Acceptance criteria**
-- Same scenarios yield equivalent terminal state and error semantics in REST and MCP.
-- Parity suite runs in CI and is documented in README/hand-off.
-
----
-
-### EPIC P0-D — Contract Hardening
-**Outcome:** Stable external interface and controlled change management.
-
-#### TKT-P0-D1 — OpenAPI generation + check-in
-**Acceptance criteria**
-- OpenAPI generated from code and committed.
-- CI detects unreviewed contract diffs.
-
-#### TKT-P0-D2 — Error catalog lock
-**Acceptance criteria**
-- Centralized error-code catalog documented.
-- Regression tests for key codes:
-  - `TASK_NOT_FOUND`
-  - `INVALID_TASK_TRANSITION`
-  - `VALIDATION_FAILED`/`BAD_REQUEST`
-  - concurrency conflict code
-
----
-
-## P1 — Post-MVP next increment
-- Cursor pagination for list API/tool.
-- `task_events` timeline read model.
-- Assignment invariants for terminal states.
-- Baseline SLO + metrics dashboard (latency/error/replay/conflict rates).
+## P1 — After MVP
+- Cursor pagination for task list
+- `task_events` timeline read model
+- metrics dashboard + baseline SLO
 
 ## P2 — Strategic
-- Outbox/event publishing.
-- Multi-tenant authz boundaries.
-- Archival and retention automation.
+- outbox/event publishing
+- tenant/authz boundaries
+- archival lifecycle policy
 
 ---
 
-## Risks and tradeoffs to track
-- **High:** in-memory store today is non-durable and non-shareable across replicas.
-- **High:** idempotency currently process-local; retries across restarts can duplicate mutations.
-- **Medium:** parity drift risk if MCP adapters bypass shared service layer.
-- **Medium:** list endpoint currently uses `TaskStatus.valueOf`; invalid status handling should be normalized.
+## 3) Implementation-ready tickets (with acceptance criteria)
+
+### TKT-P0-A1 — Concurrency error contract lock
+**Scope**
+- Standardize optimistic-lock exception mapping to one code.
+- Align ADR/docs/tests.
+
+**Acceptance criteria**
+- Concurrent update integration test produces HTTP 409 with chosen stable code.
+- Error code appears in API docs and regression tests.
+- No remaining references to alternate concurrency codes in v1 docs.
+
+### TKT-P0-A2 — Status filter validation hardening
+**Scope**
+- Parse/validate query status safely in controller or dedicated mapper.
+
+**Acceptance criteria**
+- `/v1/tasks?status=NOT_A_STATUS` returns 400 with stable code and RFC7807 body.
+- Response includes `correlationId` and `X-Correlation-Id`.
+- Behavior covered by controller test.
+
+### TKT-P0-B1/B2 — Idempotency v2 + TTL
+**Scope**
+- Evolve idempotency document and unique index to `(operation, key)`.
+- Persist payload hash and expiry.
+- Add TTL index on `expiresAt`.
+
+**Acceptance criteria**
+- Replayed request with same operation+key+payload returns original logical result.
+- Same operation+key with different payload is rejected per policy.
+- Expiry/TTL index is created at startup and documented.
+
+### TKT-P0-C1 — MCP 4-tool adapter
+**Scope**
+- Add MCP tools: create/get/list/update-status.
+- Handlers only map transport ↔ application contracts.
+
+**Acceptance criteria**
+- Each tool has schema validation mirroring REST constraints.
+- Tool tests cover: happy path, not found, invalid transition, idempotent replay.
+- No duplicated business rules in MCP adapter.
+
+### TKT-P0-C2 — REST/MCP parity suite
+**Scope**
+- Scenario-driven suite executes equivalent command sequences through both adapters.
+
+**Acceptance criteria**
+- Equivalent final task state across adapters for same scenarios.
+- Equivalent error semantics (status/code/category) across adapters.
+- Suite runs in CI and referenced in README.
+
+### TKT-P0-D1 — OpenAPI contract lock
+**Scope**
+- Generate OpenAPI from runtime/controller metadata.
+- Commit snapshot and enforce CI diff check.
+
+**Acceptance criteria**
+- `openapi.yaml` generated and versioned.
+- CI fails on contract drift unless snapshot updated in PR.
 
 ---
 
-## Recommended next slice (implementation order)
-1. P0-A1 + P0-A2 (Mongo adapter + indexes)
-2. P0-A3 + P0-B1 (locking + durable idempotency)
-3. P0-C1 + P0-C2 (MCP tools + parity suite)
-4. P0-D1 + P0-D2 (OpenAPI + contract/error locks)
+## 4) Recommended build order (next 2 dev slices)
+
+**Slice 1 (highest risk retirement):** P0-A1, P0-A2, P0-B1/B2
+- Locks external behavior before adding adapter surface.
+
+**Slice 2 (feature completion):** P0-C1, P0-C2, P0-D1
+- Delivers MCP with confidence via parity + contract governance.
+
+---
+
+## 5) Risks to watch now
+- Hardcoded DB name in Mongo index initializer can drift from runtime config.
+- Idempotency uniqueness currently key-only, not operation-scoped in schema.
+- Current replay model stores taskId only; payload mismatch cannot be detected reliably.
+- Adapter parity risk increases the longer MCP implementation is delayed.
