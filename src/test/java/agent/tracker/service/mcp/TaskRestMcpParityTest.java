@@ -18,7 +18,9 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -148,7 +150,7 @@ class TaskRestMcpParityTest {
         assertNotNull(badRequest.getCorrelationId());
         assertFalse(badRequest.getCorrelationId().isBlank());
 
-        String requestedCorrelationId = "corr-mcp-not-found-1";
+        String requestedCorrelationId = UUID.randomUUID().toString();
         McpToolException notFound = assertThrows(McpToolException.class, () ->
             mcpTools.getTask(new TaskMcpTools.GetTaskToolRequest("missing-correlation", requestedCorrelationId))
         );
@@ -172,11 +174,18 @@ class TaskRestMcpParityTest {
                 TaskPriority.HIGH,
                 "qa",
                 "parity-mcp-correlation-mismatch-1",
-                "corr-mcp-mismatch-1"
+                UUID.fromString("123e4567-e89b-12d3-a456-426614174000").toString()
             ))
         );
         assertEquals("IDEMPOTENCY_KEY_REUSE_MISMATCH", mismatch.getCode());
-        assertEquals("corr-mcp-mismatch-1", mismatch.getCorrelationId());
+        assertEquals("123e4567-e89b-12d3-a456-426614174000", mismatch.getCorrelationId());
+
+        McpToolException invalidCorrelation = assertThrows(McpToolException.class, () ->
+            mcpTools.getTask(new TaskMcpTools.GetTaskToolRequest("missing-correlation", "not-a-uuid"))
+        );
+        assertEquals("TASK_NOT_FOUND", invalidCorrelation.getCode());
+        assertNotNull(invalidCorrelation.getCorrelationId());
+        assertDoesNotThrow(() -> UUID.fromString(invalidCorrelation.getCorrelationId()));
     }
 
     @Test

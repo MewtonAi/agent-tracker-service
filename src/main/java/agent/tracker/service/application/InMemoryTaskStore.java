@@ -26,7 +26,7 @@ public class InMemoryTaskStore implements TaskStore {
     public List<Task> listTasks(TaskStatus status) {
         return tasks.values().stream()
             .filter(task -> status == null || status == task.getStatus())
-            .sorted(Comparator.comparing((Task t) -> t.getAudit().getUpdatedAt()).reversed().thenComparing(Task::getTaskId))
+            .sorted(Comparator.comparing((Task t) -> t.getAudit().getUpdatedAt()).reversed().thenComparing(Task::getTaskId, Comparator.reverseOrder()))
             .toList();
     }
 

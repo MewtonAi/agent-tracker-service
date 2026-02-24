@@ -29,8 +29,8 @@ public class MongoIndexInitializer {
     @EventListener
     void onStartup(ServerStartupEvent ignored) {
         MongoCollection<Document> tasks = mongoClient.getDatabase(databaseName).getCollection("tasks");
-        tasks.createIndex(Indexes.compoundIndex(Indexes.ascending("status"), Indexes.descending("updatedAt")));
-        tasks.createIndex(Indexes.descending("updatedAt"));
+        tasks.createIndex(Indexes.compoundIndex(Indexes.ascending("status"), Indexes.descending("updatedAt"), Indexes.descending("taskId")));
+        tasks.createIndex(Indexes.compoundIndex(Indexes.descending("updatedAt"), Indexes.descending("taskId")));
 
         MongoCollection<Document> idem = mongoClient.getDatabase(databaseName).getCollection("idempotency_records");
         idem.createIndex(

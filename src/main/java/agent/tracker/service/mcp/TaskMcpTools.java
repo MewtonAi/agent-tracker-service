@@ -135,7 +135,13 @@ public class TaskMcpTools {
         if (requestedCorrelationId == null || requestedCorrelationId.isBlank()) {
             return UUID.randomUUID().toString();
         }
-        return requestedCorrelationId.trim();
+
+        String trimmed = requestedCorrelationId.trim();
+        try {
+            return UUID.fromString(trimmed).toString();
+        } catch (IllegalArgumentException ignored) {
+            return UUID.randomUUID().toString();
+        }
     }
 
     @FunctionalInterface
