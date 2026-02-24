@@ -6,6 +6,7 @@ Current implementation snapshot:
 - Application services:
   - `TaskCommandService` (create, update status, idempotency)
   - `TaskQueryService` (get, list by optional status)
+- MCP tool service surface (`TaskMcpTools`): `createTask`, `getTask`, `listTasks`, `updateTaskStatus`
 - REST v1 endpoints:
   - `POST /v1/tasks` *(Idempotency-Key required)*
   - `GET /v1/tasks/{id}`
@@ -19,7 +20,7 @@ Current implementation snapshot:
 - Mongo idempotency TTL retention is configurable via `idempotency.ttl-hours` / `IDEMPOTENCY_TTL_HOURS` (default 48h)
 
 ## Next priorities
-1. MCP tool delivery (`create_task`, `get_task`, `list_tasks`, `update_task_status`) + REST/MCP parity suite
+1. MCP transport-level registration verification + CI parity gate for REST/MCP scenarios
 2. OpenAPI generation/check-in + CI contract drift gate
 3. Idempotency replay observability (`first_write`, `replay_hit`, `mismatch_reject`) and migration cleanup notes
 

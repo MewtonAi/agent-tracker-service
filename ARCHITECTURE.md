@@ -27,8 +27,9 @@ Task-first system of record for agent work tracking, exposed via REST and prepar
   - `GET /v1/tasks/{id}`
   - `GET /v1/tasks?status=`
   - `PATCH /v1/tasks/{id}/status` *(Idempotency-Key required)*
-- MCP v1 tools: **not implemented yet**
-  - planned: `create_task`, `get_task`, `list_tasks`, `update_task_status`
+- MCP v1 tool service surface: **implemented in application adapter** (`TaskMcpTools`)
+  - methods: `createTask`, `getTask`, `listTasks`, `updateTaskStatus`
+  - note: MCP transport-level registration/schema verification is pending runtime validation
 
 ## Error contract
 Response body fields: `type`, `title`, `status`, `detail`, `instance`, `code`, `correlationId`.
@@ -57,7 +58,7 @@ Implemented:
 - idempotency TTL retention configurable (`idempotency.ttl-hours`, default 48h)
 
 Remaining MVP-critical gaps:
-- MCP adapter + parity suite absent
+- MCP parity CI gate + transport-level verification not yet wired
 - OpenAPI snapshot/diff governance absent
 - Idempotency replay observability counters not yet emitted (`first_write`, `replay_hit`, `mismatch_reject`)
 

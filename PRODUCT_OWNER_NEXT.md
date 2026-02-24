@@ -22,8 +22,9 @@ Owner: Product/Architecture
   - retention configurable via `idempotency.ttl-hours` (default 48h)
 
 ### Not shipped / not release-safe yet
-- ❌ MCP tool surface not implemented (`create_task`, `get_task`, `list_tasks`, `update_task_status`).
-- ❌ REST/MCP parity suite not implemented.
+- ✅ MCP application tool surface implemented via `TaskMcpTools` (`createTask`, `getTask`, `listTasks`, `updateTaskStatus`) sharing existing services.
+- ✅ REST/MCP parity test baseline added (`TaskRestMcpParityTest`) for create, transition, and idempotency-mismatch semantics.
+- ⚠️ MCP transport-level schema/registration verification in a runtime environment is still pending.
 - ❌ OpenAPI generation/snapshot/diff gate missing.
 - ❌ Idempotency replay observability counters/log events not standardized.
 
@@ -34,8 +35,8 @@ Owner: Product/Architecture
 ## P0 — MVP release gate
 
 ### EPIC P0-A: MCP delivery + semantic parity (highest impact)
-1. **TKT-P0-A1 — Implement 4 MCP tools via shared services**
-2. **TKT-P0-A2 — REST/MCP parity scenario suite in CI**
+1. ✅ **TKT-P0-A1 — Implement 4 MCP tools via shared services**
+2. 🟡 **TKT-P0-A2 — REST/MCP parity scenario suite in CI** (baseline scenarios implemented; CI gate still pending)
 
 ### EPIC P0-B: Contract governance
 3. **TKT-P0-B1 — OpenAPI generation + snapshot + drift gate**
