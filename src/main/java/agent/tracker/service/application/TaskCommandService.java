@@ -10,6 +10,9 @@ import agent.tracker.service.domain.model.TaskStatus;
 import agent.tracker.service.domain.model.TaskType;
 import agent.tracker.service.domain.policy.TaskTransitionPolicy;
 import jakarta.inject.Singleton;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -24,7 +27,8 @@ public class TaskCommandService {
 
     public Task createTask(CreateTaskCommand command) {
         String idempotencyKey = requireText(command.idempotencyKey(), "idempotencyKey");
-        Task existing = store.findCreateReplay(idempotencyKey);
+        String payloadHash = hashPayload("create", command.title(), command.description(), command.taskType(), command.priority(), command.createdBy());
+        Task existing = store.findCreateReplay(idempotencyKey, payloadHash);
         if (existing != null) {
             return existing;
         }
@@ -49,13 +53,14 @@ public class TaskCommandService {
             .build();
 
         Task saved = store.save(task);
-        store.saveCreateReplay(idempotencyKey, saved);
+        store.saveCreateReplay(idempotencyKey, payloadHash, saved);
         return saved;
     }
 
     public Task updateTaskStatus(UpdateTaskStatusCommand command) {
         String idempotencyKey = requireText(command.idempotencyKey(), "idempotencyKey");
-        Task existingReplay = store.findStatusReplay(command.taskId(), idempotencyKey);
+        String payloadHash = hashPayload("update-status", command.taskId(), command.status(), command.updatedBy());
+        Task existingReplay = store.findStatusReplay(command.taskId(), idempotencyKey, payloadHash);
         if (existingReplay != null) {
             return existingReplay;
         }
@@ -72,7 +77,7 @@ public class TaskCommandService {
             .build();
 
         Task saved = store.save(updated);
-        store.saveStatusReplay(command.taskId(), idempotencyKey, saved);
+        store.saveStatusReplay(command.taskId(), idempotencyKey, payloadHash, saved);
         return saved;
     }
 
@@ -93,5 +98,24 @@ public class TaskCommandService {
 
     private static String coalesce(String value, String fallback) {
         return (value == null || value.isBlank()) ? fallback : value;
+    }
+
+    private static String hashPayload(Object... parts) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            for (Object part : parts) {
+                String value = part == null ? "<null>" : String.valueOf(part).trim();
+                digest.update(value.getBytes(StandardCharsets.UTF_8));
+                digest.update((byte) '|');
+            }
+            byte[] hash = digest.digest();
+            StringBuilder sb = new StringBuilder(hash.length * 2);
+            for (byte b : hash) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("Missing SHA-256 support", e);
+        }
     }
 }

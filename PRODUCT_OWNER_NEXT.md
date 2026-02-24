@@ -20,10 +20,10 @@ Owner: Product/Architecture
 ### Not shipped / not release-safe yet
 - ❌ MCP tool surface not implemented (`create_task`, `get_task`, `list_tasks`, `update_task_status`).
 - ❌ REST/MCP parity suite not implemented.
-- ❌ Durable idempotency v2 incomplete:
-  - key uniqueness still key-only (not `(operation,key)`)
-  - no payload fingerprint mismatch detection
-  - TTL tied to `createdAt` instead of explicit `expiresAt`
+- ✅ Durable idempotency v2 baseline shipped:
+  - unique idempotency scope uses `(operation,key)`
+  - payload fingerprint mismatch rejects with stable 409 code
+  - TTL uses explicit `expiresAt` field (default retention 48h)
 - ❌ OpenAPI generation/snapshot/diff gate missing.
 
 ---

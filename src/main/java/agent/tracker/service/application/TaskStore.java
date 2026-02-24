@@ -9,13 +9,13 @@ public interface TaskStore {
 
     List<Task> listTasks(TaskStatus status);
 
-    Task findCreateReplay(String idempotencyKey);
+    Task findCreateReplay(String idempotencyKey, String payloadHash);
 
-    Task findStatusReplay(String taskId, String idempotencyKey);
+    Task findStatusReplay(String taskId, String idempotencyKey, String payloadHash);
 
-    void saveCreateReplay(String idempotencyKey, Task task);
+    void saveCreateReplay(String idempotencyKey, String payloadHash, Task task);
 
-    void saveStatusReplay(String taskId, String idempotencyKey, Task task);
+    void saveStatusReplay(String taskId, String idempotencyKey, String payloadHash, Task task);
 
     Task save(Task task);
 }

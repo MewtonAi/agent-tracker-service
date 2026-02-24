@@ -14,13 +14,14 @@ Current implementation snapshot:
 - RFC7807-style API error contract with stable `code` and `correlationId`
 - Concurrency conflict code locked for optimistic-write races: `CONCURRENT_MODIFICATION`
 - Status update idempotency is scoped by `(taskId, idempotencyKey)` to avoid cross-task replay collisions
-- Mongo idempotency TTL retention is configurable via `idempotency.ttl-hours` / `IDEMPOTENCY_TTL_HOURS`
+- Mongo idempotency v2 baseline: unique `(operation,key)`, payload hash mismatch detection, TTL on `expiresAt`
+- Mismatch contract is enforced as HTTP 409 with `IDEMPOTENCY_KEY_REUSE_MISMATCH`
+- Mongo idempotency TTL retention is configurable via `idempotency.ttl-hours` / `IDEMPOTENCY_TTL_HOURS` (default 48h)
 
 ## Next priorities
-1. Idempotency v2 rollout (ADR-005): `(operation,key)` uniqueness, payload hash mismatch detection, `expiresAt` TTL, bounded legacy compatibility window
-2. Mismatch contract enforcement: `IDEMPOTENCY_KEY_REUSE_MISMATCH` (409) + regression tests
-3. MCP tool delivery (`create_task`, `get_task`, `list_tasks`, `update_task_status`) + REST/MCP parity suite
-4. OpenAPI generation/check-in + CI contract drift gate
+1. MCP tool delivery (`create_task`, `get_task`, `list_tasks`, `update_task_status`) + REST/MCP parity suite
+2. OpenAPI generation/check-in + CI contract drift gate
+3. Idempotency replay observability (`first_write`, `replay_hit`, `mismatch_reject`) and migration cleanup notes
 
 ## Local validation
 Run:

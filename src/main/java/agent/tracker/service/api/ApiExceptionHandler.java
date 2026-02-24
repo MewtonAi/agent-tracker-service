@@ -2,6 +2,7 @@ package agent.tracker.service.api;
 
 import agent.tracker.service.domain.exception.ConcurrentModificationException;
 import agent.tracker.service.domain.exception.ConflictException;
+import agent.tracker.service.domain.exception.IdempotencyKeyReuseMismatchException;
 import agent.tracker.service.domain.exception.InvalidTaskTransitionException;
 import agent.tracker.service.domain.exception.NotFoundException;
 import io.micronaut.http.HttpRequest;
@@ -31,6 +32,11 @@ public class ApiExceptionHandler {
     @Error(global = true, exception = ConcurrentModificationException.class)
     public HttpResponse<ApiProblem> handleConcurrentModification(HttpRequest<?> request, ConcurrentModificationException exception) {
         return respond(request, HttpStatus.CONFLICT, "CONCURRENT_MODIFICATION", exception.getMessage());
+    }
+
+    @Error(global = true, exception = IdempotencyKeyReuseMismatchException.class)
+    public HttpResponse<ApiProblem> handleIdempotencyMismatch(HttpRequest<?> request, IdempotencyKeyReuseMismatchException exception) {
+        return respond(request, HttpStatus.CONFLICT, "IDEMPOTENCY_KEY_REUSE_MISMATCH", exception.getMessage());
     }
 
     @Error(global = true, exception = ConflictException.class)

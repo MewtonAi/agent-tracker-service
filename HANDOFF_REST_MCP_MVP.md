@@ -14,23 +14,23 @@ Last updated: 2026-02-24 (PST)
 - REST task endpoints are implemented and stable for core flows.
 - Concurrency conflict contract is stabilized at `CONCURRENT_MODIFICATION`.
 - Invalid list status input now resolves to contract-level 400 (`BAD_REQUEST`).
-- Mongo idempotency is still legacy-shaped (key-only uniqueness + TTL on `createdAt`).
+- Mongo idempotency v2 baseline is implemented (`operation`, `key`, `payloadHash`, `resultRef`, `expiresAt`) with matching indexes.
+- Mismatch contract `IDEMPOTENCY_KEY_REUSE_MISMATCH` is implemented and tested.
 - MCP tooling is not yet implemented.
 
 ## Recommended next coding slice (do next)
 
-### 1) Idempotency v2 rollout (ADR-005)
-- Evolve document to explicit fields (`operation`, `key`, `payloadHash`, `resultRef`, `expiresAt`).
-- Create indexes: unique `(operation,key)` and TTL on `expiresAt`.
-- Implement dual-read compatibility for bounded migration window.
-
-### 2) Mismatch contract enforcement (ADR-004)
-- Implement `IDEMPOTENCY_KEY_REUSE_MISMATCH` for same `(operation,key)` with payload hash mismatch.
-- Add regression tests and API error-doc updates.
-
-### 3) Deliver MCP + parity
+### 1) Deliver MCP + parity
 - Implement tools: `create_task`, `get_task`, `list_tasks`, `update_task_status`.
 - Add parity suite (REST vs MCP scenario equivalence) in CI.
+
+### 2) OpenAPI governance
+- Generate and commit `openapi.yaml`.
+- Add CI drift gate against checked-in snapshot.
+
+### 3) Idempotency observability + migration hardening
+- Emit structured telemetry for `first_write`, `replay_hit`, `mismatch_reject`.
+- Decide whether legacy-key dual-read migration is required and time-box cleanup.
 
 ## Suggested ticket cut
 - **T1:** idempotency v2 schema/index migration + compatibility path

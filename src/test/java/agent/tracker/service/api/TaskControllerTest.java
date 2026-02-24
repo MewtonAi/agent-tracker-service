@@ -116,4 +116,25 @@ class TaskControllerTest {
         Map<?, ?> body = exception.getResponse().getBody(Map.class).orElseThrow();
         assertEquals("BAD_REQUEST", body.get("code"));
     }
+
+    @Test
+    void shouldRejectIdempotencyKeyReuseWithDifferentPayload() {
+        client.toBlocking().retrieve(
+            HttpRequest.POST("/v1/tasks", new CreateTaskRequest("Original", "desc", TaskType.FEATURE, TaskPriority.HIGH, "qa"))
+                .header("Idempotency-Key", "rest-mismatch-create-1"),
+            TaskResponse.class
+        );
+
+        HttpClientResponseException exception = assertThrows(HttpClientResponseException.class, () ->
+            client.toBlocking().exchange(
+                HttpRequest.POST("/v1/tasks", new CreateTaskRequest("Different", "desc", TaskType.FEATURE, TaskPriority.HIGH, "qa"))
+                    .header("Idempotency-Key", "rest-mismatch-create-1"),
+                Map.class
+            )
+        );
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        Map<?, ?> body = exception.getResponse().getBody(Map.class).orElseThrow();
+        assertEquals("IDEMPOTENCY_KEY_REUSE_MISMATCH", body.get("code"));
+    }
 }

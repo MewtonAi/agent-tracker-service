@@ -16,24 +16,27 @@ import org.bson.Document;
 public class MongoIndexInitializer {
 
     private final MongoClient mongoClient;
-    private final long idempotencyTtlHours;
+    private final String databaseName;
 
-    public MongoIndexInitializer(MongoClient mongoClient, @Value("${idempotency.ttl-hours:72}") long idempotencyTtlHours) {
+    public MongoIndexInitializer(
+        MongoClient mongoClient,
+        @Value("${mongodb.database:agent_tracker}") String databaseName
+    ) {
         this.mongoClient = mongoClient;
-        this.idempotencyTtlHours = idempotencyTtlHours;
+        this.databaseName = databaseName;
     }
 
     @EventListener
     void onStartup(ServerStartupEvent ignored) {
-        MongoCollection<Document> tasks = mongoClient.getDatabase("agent_tracker").getCollection("tasks");
+        MongoCollection<Document> tasks = mongoClient.getDatabase(databaseName).getCollection("tasks");
         tasks.createIndex(Indexes.compoundIndex(Indexes.ascending("status"), Indexes.descending("updatedAt")));
         tasks.createIndex(Indexes.descending("updatedAt"));
 
-        MongoCollection<Document> idem = mongoClient.getDatabase("agent_tracker").getCollection("idempotency_records");
-        idem.createIndex(Indexes.ascending("key"), new IndexOptions().unique(true));
+        MongoCollection<Document> idem = mongoClient.getDatabase(databaseName).getCollection("idempotency_records");
         idem.createIndex(
-            Indexes.ascending("createdAt"),
-            new IndexOptions().expireAfter(idempotencyTtlHours * 3600, java.util.concurrent.TimeUnit.SECONDS)
+            Indexes.compoundIndex(Indexes.ascending("operation"), Indexes.ascending("key")),
+            new IndexOptions().unique(true)
         );
+        idem.createIndex(Indexes.ascending("expiresAt"), new IndexOptions().expireAfter(0L, java.util.concurrent.TimeUnit.SECONDS));
     }
 }

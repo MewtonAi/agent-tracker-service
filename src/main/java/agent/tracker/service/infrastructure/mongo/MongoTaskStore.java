@@ -2,13 +2,16 @@ package agent.tracker.service.infrastructure.mongo;
 
 import agent.tracker.service.application.TaskStore;
 import agent.tracker.service.domain.exception.ConcurrentModificationException;
+import agent.tracker.service.domain.exception.IdempotencyKeyReuseMismatchException;
 import agent.tracker.service.domain.model.AgentRef;
 import agent.tracker.service.domain.model.AuditMetadata;
 import agent.tracker.service.domain.model.Task;
 import agent.tracker.service.domain.model.TaskStatus;
 import io.micronaut.context.annotation.Requires;
+import io.micronaut.context.annotation.Value;
 import io.micronaut.data.exceptions.OptimisticLockException;
 import jakarta.inject.Singleton;
+import java.time.Instant;
 import java.util.List;
 
 @Singleton
@@ -17,10 +20,16 @@ public class MongoTaskStore implements TaskStore {
 
     private final TaskMongoRepository taskRepository;
     private final IdempotencyMongoRepository idempotencyRepository;
+    private final long idempotencyTtlHours;
 
-    public MongoTaskStore(TaskMongoRepository taskRepository, IdempotencyMongoRepository idempotencyRepository) {
+    public MongoTaskStore(
+        TaskMongoRepository taskRepository,
+        IdempotencyMongoRepository idempotencyRepository,
+        @Value("${idempotency.ttl-hours:48}") long idempotencyTtlHours
+    ) {
         this.taskRepository = taskRepository;
         this.idempotencyRepository = idempotencyRepository;
+        this.idempotencyTtlHours = idempotencyTtlHours;
     }
 
     @Override
@@ -37,23 +46,23 @@ public class MongoTaskStore implements TaskStore {
     }
 
     @Override
-    public Task findCreateReplay(String idempotencyKey) {
-        return findReplay("create:" + idempotencyKey);
+    public Task findCreateReplay(String idempotencyKey, String payloadHash) {
+        return findReplay("create_task", idempotencyKey, payloadHash);
     }
 
     @Override
-    public Task findStatusReplay(String taskId, String idempotencyKey) {
-        return findReplay(statusScope(taskId, idempotencyKey));
+    public Task findStatusReplay(String taskId, String idempotencyKey, String payloadHash) {
+        return findReplay(statusOperation(taskId), idempotencyKey, payloadHash);
     }
 
     @Override
-    public void saveCreateReplay(String idempotencyKey, Task task) {
-        saveReplay("create:" + idempotencyKey, task);
+    public void saveCreateReplay(String idempotencyKey, String payloadHash, Task task) {
+        saveReplay("create_task", idempotencyKey, payloadHash, task);
     }
 
     @Override
-    public void saveStatusReplay(String taskId, String idempotencyKey, Task task) {
-        saveReplay(statusScope(taskId, idempotencyKey), task);
+    public void saveStatusReplay(String taskId, String idempotencyKey, String payloadHash, Task task) {
+        saveReplay(statusOperation(taskId), idempotencyKey, payloadHash, task);
     }
 
     @Override
@@ -66,19 +75,41 @@ public class MongoTaskStore implements TaskStore {
         }
     }
 
-    private Task findReplay(String key) {
-        return idempotencyRepository.findById(key)
-            .map(IdempotencyRecordDocument::taskId)
+    private Task findReplay(String operation, String key, String payloadHash) {
+        return idempotencyRepository.findByOperationAndKey(operation, key)
+            .map(record -> ensurePayloadMatch(record, key, payloadHash))
+            .map(IdempotencyRecordDocument::resultRef)
             .map(this::findTaskById)
             .orElse(null);
     }
 
-    private void saveReplay(String key, Task task) {
-        if (idempotencyRepository.findById(key).isPresent()) {
+    private IdempotencyRecordDocument ensurePayloadMatch(IdempotencyRecordDocument record, String key, String payloadHash) {
+        if (!record.payloadHash().equals(payloadHash)) {
+            throw new IdempotencyKeyReuseMismatchException("Idempotency key was already used with a different payload: " + key);
+        }
+        return record;
+    }
+
+    private void saveReplay(String operation, String key, String payloadHash, Task task) {
+        if (idempotencyRepository.findByOperationAndKey(operation, key).isPresent()) {
             return;
         }
+
+        Instant now = Instant.now();
+        Instant expiresAt = now.plusSeconds(idempotencyTtlHours * 3600);
+        IdempotencyRecordDocument document = new IdempotencyRecordDocument(
+            operation + ":" + key,
+            operation,
+            key,
+            payloadHash,
+            task.getTaskId(),
+            expiresAt,
+            now,
+            now
+        );
+
         try {
-            idempotencyRepository.save(new IdempotencyRecordDocument(key, task.getTaskId(), null));
+            idempotencyRepository.save(document);
         } catch (RuntimeException exception) {
             if (!isDuplicateIdempotencyKey(exception)) {
                 throw exception;
@@ -141,8 +172,8 @@ public class MongoTaskStore implements TaskStore {
         return new AgentRefEmbeddable(ref.agentId(), ref.displayName(), ref.capabilities());
     }
 
-    private static String statusScope(String taskId, String idempotencyKey) {
-        return "status:" + taskId + ":" + idempotencyKey;
+    private static String statusOperation(String taskId) {
+        return "update_task_status:" + taskId;
     }
 
     private static boolean isDuplicateIdempotencyKey(RuntimeException exception) {

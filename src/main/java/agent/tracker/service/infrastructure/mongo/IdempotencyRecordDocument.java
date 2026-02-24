@@ -9,8 +9,13 @@ import java.time.Instant;
 @Serdeable
 @MappedEntity("idempotency_records")
 public record IdempotencyRecordDocument(
-    @Id String key,
-    String taskId,
-    @DateCreated Instant createdAt
+    @Id String id,
+    String operation,
+    String key,
+    String payloadHash,
+    String resultRef,
+    Instant expiresAt,
+    @DateCreated Instant createdAt,
+    Instant updatedAt
 ) {
 }

@@ -2,6 +2,7 @@ package agent.tracker.service.application;
 
 import agent.tracker.service.domain.contract.CreateTaskCommand;
 import agent.tracker.service.domain.contract.UpdateTaskStatusCommand;
+import agent.tracker.service.domain.exception.IdempotencyKeyReuseMismatchException;
 import agent.tracker.service.domain.model.Task;
 import agent.tracker.service.domain.model.TaskPriority;
 import agent.tracker.service.domain.model.TaskStatus;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @MicronautTest
 @Property(name = "task.store", value = "mongo")
@@ -101,5 +103,28 @@ class MongoTaskStoreIntegrationTest {
 
         assertEquals(TaskStatus.IN_PROGRESS, firstUpdate.getStatus());
         assertEquals(TaskStatus.IN_PROGRESS, secondUpdate.getStatus());
+    }
+
+    @Test
+    void shouldRejectCreateReplayWhenPayloadDiffers() {
+        commandService.createTask(new CreateTaskCommand(
+            "same-key-original",
+            "mongo",
+            TaskType.FEATURE,
+            TaskPriority.HIGH,
+            "integration",
+            "mongo-create-mismatch-1"
+        ));
+
+        assertThrows(IdempotencyKeyReuseMismatchException.class, () ->
+            commandService.createTask(new CreateTaskCommand(
+                "same-key-changed",
+                "mongo",
+                TaskType.FEATURE,
+                TaskPriority.HIGH,
+                "integration",
+                "mongo-create-mismatch-1"
+            ))
+        );
     }
 }
