@@ -1,34 +1,34 @@
 ## Summary
 - 
 
-## Validation
-- [ ] `./gradlew check` run locally (or explain why not)
-- [ ] CI run attached
+## Release Evidence Bundle (required for release candidates)
+Source of truth: `docs/release-evidence.md` (ADR-016 / ADR-017)
 
-## Release Evidence (ADR-016)
-Complete: `docs/release-evidence.md`
+### 1) CI gate evidence
+- [ ] `./gradlew check` passed on JDK 21
+- [ ] CI run URL:
+- [ ] Commit SHA:
 
-### CI gate (JDK 21)
-- [ ] Passed
-- CI URL:
-- Commit SHA:
-
-### OpenAPI snapshot
+### 2) OpenAPI snapshot evidence
 - [ ] `verifyOpenApiSnapshot` passed
-- Snapshot status:
-  - [ ] unchanged
-  - [ ] changed intentionally and committed
+- [ ] `openapi/openapi.yaml` unchanged **or** intentionally updated in this PR
+- [ ] If changed, rationale linked:
 
-### REST/MCP parity
-- [ ] Included via default `check` gate
-- Notes:
+### 3) REST/MCP parity evidence
+- [ ] Parity suite included via default `check` gate
+- [ ] No selective test bypass used for release branch
+- [ ] Coverage notes:
 
-### Canonical ADR set used
-- [ ] ADR-012 canonicalization
-- [ ] ADR-013 ordering contract
-- [ ] ADR-014 supersession policy
-- [ ] ADR-015 cursor compatibility
-- [ ] ADR-016 release evidence gate
+### 4) Canonical ADR evidence
+- [ ] Active policy references limited to ADR-012/013/014/015/016/017
+- [ ] No superseded ADR cited as active contract
 
-## Risks / Follow-ups
-- 
+### 5) Environment constraints
+- [ ] Local/runtime limitation documented (or mark none)
+- [ ] Evidence source declared if constrained (CI or Java-enabled workstation)
+
+### 6) Go/No-Go statement
+- Decision: GO / NO-GO
+- Decision owner:
+- Timestamp (PST):
+- Risk notes / follow-ups:

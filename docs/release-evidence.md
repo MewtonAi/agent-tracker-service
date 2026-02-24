@@ -1,4 +1,4 @@
-# Release Evidence Bundle (ADR-016)
+# Release Evidence Bundle (ADR-016 / ADR-017)
 
 Use this checklist for any PR that claims REST + MCP release readiness.
 
@@ -25,7 +25,13 @@ Reference active contracts only:
 - [ ] `ADR-014-contract-source-of-truth-and-supersession-policy.md`
 - [ ] `ADR-015-cursor-token-evolution-and-backward-compatibility.md`
 - [ ] `ADR-016-release-readiness-evidence-and-go-no-go-gate.md`
+- [ ] `ADR-017-release-evidence-artifact-and-pr-template-policy.md`
 
-## 5) Handoff consistency
+## 5) Environment constraints
+- [ ] Local/runtime limitation recorded (or mark none)
+- [ ] If constrained, evidence source declared (CI run or Java-enabled workstation)
+
+## 6) Handoff + decision consistency
 - [ ] Handoff note includes the same evidence headings and outcomes
 - [ ] Any unresolved risk/blocker is explicitly listed
+- [ ] Explicit release decision captured: `GO` or `NO-GO` (owner + timestamp)

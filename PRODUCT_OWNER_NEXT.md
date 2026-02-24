@@ -19,6 +19,11 @@ Owner: Product/Architecture
 - ⚠️ Local shell lacks Java runtime (`JAVA_HOME`/`java` missing); no in-shell verification run possible.
 - ⚠️ OpenAPI snapshot freshness remains unverified in this environment until Java 21 run is completed.
 
+### Verification log (this run)
+- Attempted: `./gradlew check`
+- Result: failed immediately with `JAVA_HOME is not set and no 'java' command could be found in your PATH`.
+- Impact: release evidence must be captured from CI/Java-enabled workstation for TKT-P1-G15.
+
 ---
 
 ## 2) Prioritized roadmap (REST + MCP readiness)

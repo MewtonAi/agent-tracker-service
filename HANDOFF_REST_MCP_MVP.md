@@ -40,3 +40,4 @@ Last updated: 2026-02-24 (PST, release-evidence workflow pass)
 
 ## Environment caveat for this run
 - No Java runtime in this shell (`java`/`JAVA_HOME` unavailable), so verification execution was not possible in-session.
+- Direct command attempt recorded: `./gradlew check` -> `JAVA_HOME is not set and no 'java' command could be found in your PATH`.
