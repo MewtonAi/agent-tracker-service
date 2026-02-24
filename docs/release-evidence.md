@@ -1,4 +1,4 @@
-# Release Evidence Bundle (ADR-016 / ADR-017 / ADR-019 / ADR-020 / ADR-021 / ADR-022)
+# Release Evidence Bundle (ADR-016 / ADR-017 / ADR-019 / ADR-020 / ADR-021 / ADR-022 / ADR-023)
 
 Use this checklist for any PR that claims REST + MCP release readiness.
 
@@ -21,12 +21,13 @@ Use this checklist for any PR that claims REST + MCP release readiness.
 - [ ] Parity tests were included via default `check` gate (no selective bypass)
 - [ ] Representative parity coverage noted (for example: create/get/list/update-status, idempotency mismatch, correlation failures)
 
-## 4) Minimum release test-signal set (required, ADR-022)
-- [ ] `TaskRestMcpParityTest` status recorded
-- [ ] `TaskMcpRuntimeTransportContractTest` status recorded
-- [ ] `OpenApiSnapshotContractTest` status recorded
-- [ ] `ReleaseReadinessDocumentationContractTest` status recorded
+## 4) Minimum release test-signal set (required, ADR-022 + ADR-023)
+- [ ] `TaskRestMcpParityTest` status recorded as `PASS` / `FAIL` / `NOT_RUN`
+- [ ] `TaskMcpRuntimeTransportContractTest` status recorded as `PASS` / `FAIL` / `NOT_RUN`
+- [ ] `OpenApiSnapshotContractTest` status recorded as `PASS` / `FAIL` / `NOT_RUN`
+- [ ] `ReleaseReadinessDocumentationContractTest` status recorded as `PASS` / `FAIL` / `NOT_RUN`
 - [ ] Signal source reference recorded (CI run URL or local Java21 log)
+- [ ] Any `FAIL`/`NOT_RUN` signal keeps decision at `NO-GO`
 
 ## 5) Canonical ADR references (required)
 Reference active contracts only:
@@ -41,6 +42,7 @@ Reference active contracts only:
 - [ ] `ADR-020-release-contract-documentation-coverage-policy.md`
 - [ ] `ADR-021-java21-toolchain-readiness-and-verification-provenance-ladder.md`
 - [ ] `ADR-022-release-evidence-minimum-test-signal-set-policy.md`
+- [ ] `ADR-023-release-evidence-signal-status-normalization-and-no-go-default.md`
 
 ## 6) Environment constraints
 - [ ] Local/runtime limitation recorded (or mark none)

@@ -1,6 +1,6 @@
 # PRODUCT_OWNER_NEXT.md
 
-Last updated: 2026-02-24 (PST, OpenAPI pagination-marker hardening + ADR-022 release signal-set policy)
+Last updated: 2026-02-24 (PST, ADR-023 signal-status normalization + NO-GO default)
 Owner: Product/Architecture
 
 ## 1) Current inspection snapshot (this pass)
@@ -8,23 +8,22 @@ Owner: Product/Architecture
 ### Code + tests + docs
 - ✅ REST/MCP parity posture remains anchored in shared application services and parity contract tests.
 - ✅ Mongo idempotency replay handling includes stale-reference fail-soft behavior with integration coverage.
-- ✅ Release-readiness documentation contract test enforces canonical release ADR coverage through ADR-021, including Java-preflight evidence fields.
-- ✅ ADR-022 now codifies minimum release test-signal declaration requirements (`TaskRestMcpParityTest`, `TaskMcpRuntimeTransportContractTest`, `OpenApiSnapshotContractTest`, `ReleaseReadinessDocumentationContractTest`).
+- ✅ Release docs contract tests already gate canonical ADR references and release evidence template expectations.
+- ✅ ADR-022 minimum release signal declaration remains in force.
+- ✅ ADR-023 now tightens release evidence with normalized signal statuses (`PASS`/`FAIL`/`NOT_RUN`) and a deterministic NO-GO default.
 - ✅ CI workflow remains minimal and release-relevant (`.github/workflows/ci.yml`: JDK 21 + `./gradlew check`).
-- ✅ Release lane sequencing, evidence provenance/freshness, and docs-governance policies are explicitly documented (ADR-018/019/020).
-- ✅ Cursor compatibility hardening now includes Mongo integration coverage for offset-token forms (`o:<n>`, `O: <n>`) and unsupported-prefix rejection.
-- ✅ OpenAPI snapshot markers now explicitly include pagination query parameters and `nextCursor` response field pending Java-21 generated reconciliation.
+- ✅ OpenAPI contract test signal is now more resilient to formatting-only snapshot changes by asserting YAML structure for pagination fields (`cursor`, `limit`, `nextCursor`).
 
 ### Runtime verification
 - ⚠️ Local verification blocked in this shell: Java runtime unavailable (`JAVA_HOME`/`java` missing).
-- ⚠️ OpenAPI snapshot freshness + final gate status remain CI/Java-enabled-workstation verifiable only.
+- ⚠️ OpenAPI reconciliation + final gate remains CI/Java-enabled-workstation verifiable only.
 
 ### Delta introduced in this pass
-- Added ADR-021 for Java 21 toolchain readiness and verification provenance ladder policy.
-- Added ADR-022 for minimum release test-signal declaration policy in GO/NO-GO evidence.
-- Tightened release-planning artifacts to require explicit Java preflight declaration (`java -version`, `JAVA_HOME`, evidence source).
-- Refined roadmap/backlog/handoff language so lane closure explicitly includes toolchain unblock path before OpenAPI/CI reconciliation.
-- Hardened OpenAPI contract checks to assert concrete pagination markers (`query.cursor`, `query.limit`, `nextCursor` + nullable) instead of loose token-only matching, reducing false-green drift risk.
+- Added ADR-023 (`ADR-023-release-evidence-signal-status-normalization-and-no-go-default.md`).
+- Updated release artifacts (`docs/release-evidence.md`, `.github/pull_request_template.md`) to require normalized status vocabulary and explicit NO-GO default behavior.
+- Refined roadmap + backlog sequencing to include implementation-ready signal-normalization rollout ticket before final doc hygiene closure.
+- Updated architecture/readme/handoff references to include ADR-023 in canonical release policy set.
+- Hardened `OpenApiSnapshotContractTest` with YAML-structural assertions for list pagination contract fields and added explicit `testImplementation("org.yaml:snakeyaml")` for deterministic parsing.
 
 ---
 
@@ -33,14 +32,15 @@ Owner: Product/Architecture
 ### P1 — Lane closure for release candidate
 1. **TKT-P1-G21 — Java 21 toolchain preflight + verification source declaration (ADR-021)**
 2. **TKT-P1-G15 — OpenAPI snapshot reconciliation + CI green evidence**
-3. **TKT-P1-G22 — Release evidence minimum test-signal declaration rollout (ADR-022)**
-4. **TKT-P1-G19 — Evidence provenance/freshness enforcement rollout (ADR-019 + ADR-021)**
-5. **TKT-P1-G17 — Canonical ADR reference hygiene final sweep (through ADR-022)**
+3. **TKT-P1-G22 — Minimum release test-signal declaration rollout (ADR-022)**
+4. **TKT-P1-G23 — Signal-status normalization + NO-GO default rollout (ADR-023)**
+5. **TKT-P1-G19 — Evidence provenance/freshness enforcement rollout (ADR-019 + ADR-021)**
+6. **TKT-P1-G17 — Canonical ADR reference hygiene final sweep (through ADR-023)**
 
-### P2 — Post-lane hardening (after P1 complete)
-4. **TKT-P2-A18 — Cursor phase-2 (seek token) readiness and parity expansion**
-5. Authn/authz + tenant boundary contracts
-6. Outbox/domain-event baseline and retention policy
+### P2 — Post-lane hardening
+1. **TKT-P2-A18 — Cursor phase-2 (seek token) readiness and parity expansion**
+2. Authn/authz + tenant boundary contracts
+3. Outbox/domain-event baseline and retention policy
 
 ---
 
@@ -49,85 +49,53 @@ Owner: Product/Architecture
 ### TKT-P1-G21 — Java 21 toolchain preflight + verification source declaration
 **Goal**: remove execution ambiguity before release-lane verification.
 
-**Scope**
-- Record Java preflight in release artifacts:
-  - `java -version` outcome
-  - `JAVA_HOME` presence/absence
-  - declared evidence source (`local-java21` or `ci-java21`)
-- If local Java 21 unavailable, explicitly route verification to CI and mark local constraint.
-
 **Acceptance criteria**
-- `docs/release-evidence.md` and PR template include Java preflight fields.
-- Handoff note explicitly states verification source and any local limitation.
-- No GO statement is issued without preflight declaration.
+- `docs/release-evidence.md` + PR template include: `java -version`, `JAVA_HOME`, evidence source (`local-java21` / `ci-java21`).
+- Handoff explicitly states verification source and local constraints.
+- No GO statement issued without preflight declaration.
 
 ### TKT-P1-G15 — OpenAPI snapshot reconciliation + CI green evidence
 **Goal**: eliminate contract drift risk before GO/NO-GO.
 
-**Scope**
-- Run in Java 21 environment:
-  - `./gradlew updateOpenApiSnapshot`
-  - `./gradlew check`
-- Commit `openapi/openapi.yaml` if regenerated.
-- Populate release evidence in PR/handoff via `docs/release-evidence.md`.
+**Acceptance criteria**
+- Java 21 execution evidence for `./gradlew updateOpenApiSnapshot` and `./gradlew check`.
+- `verifyOpenApiSnapshot` and `OpenApiSnapshotContractTest` pass.
+- CI run for PR head SHA is green and linked in evidence bundle.
+
+### TKT-P1-G22 — Minimum release signal declaration rollout
+**Goal**: keep release claims auditable at required signal level.
 
 **Acceptance criteria**
-- `verifyOpenApiSnapshot` passes.
-- `OpenApiSnapshotContractTest` passes.
-- CI run for PR head SHA is green.
-- Evidence captures CI URL + SHA + OpenAPI diff outcome.
+- Required signal set remains declared: `TaskRestMcpParityTest`, `TaskMcpRuntimeTransportContractTest`, `OpenApiSnapshotContractTest`, `ReleaseReadinessDocumentationContractTest`.
+- Signal source reference (CI URL or local Java21 logs) is recorded for each release claim.
+- Missing signal declaration blocks GO.
 
-### TKT-P1-G22 — Release evidence minimum test-signal declaration rollout
-**Goal**: make release claims auditable at test-signal level, not only aggregate `check` level.
-
-**Scope**
-- Require explicit signal status entries in release artifacts for:
-  - `TaskRestMcpParityTest`
-  - `TaskMcpRuntimeTransportContractTest`
-  - `OpenApiSnapshotContractTest`
-  - `ReleaseReadinessDocumentationContractTest`
-- Link each signal set to CI URL/log source and head SHA evidence bundle.
+### TKT-P1-G23 — Signal-status normalization + NO-GO default rollout
+**Goal**: remove ambiguous signal wording and enforce deterministic release decision behavior.
 
 **Acceptance criteria**
-- `docs/release-evidence.md` and PR template include required signal checklist fields.
-- Release claim is blocked (`NO-GO`) when any signal is missing/unknown.
-- Handoff explicitly references ADR-022 signal declaration state.
+- All required signals use only `PASS` / `FAIL` / `NOT_RUN` status values.
+- Any `FAIL`/`NOT_RUN` required signal forces release decision to remain `NO-GO`.
+- Docs contract tests assert ADR-023 references + normalized status markers in release artifacts.
 
 ### TKT-P1-G19 — Evidence provenance/freshness enforcement rollout
-**Goal**: make GO/NO-GO decisions auditable, time-bounded, and source-explicit.
-
-**Scope**
-- Complete PR template + release evidence fields for ADR-019:
-  - evidence source type
-  - commit SHA parity
-  - freshness window status
-- Ensure handoff notes include explicit provenance statement.
+**Goal**: make GO/NO-GO decisions source-explicit and time-bounded.
 
 **Acceptance criteria**
-- PR template contains provenance + freshness checklist items plus Java preflight fields.
-- `docs/release-evidence.md` includes <=24h freshness gate, preflight declaration, and owner override note.
-- Handoff references ADR-019/021 and records evidence origin.
+- Evidence source + SHA parity + <=24h freshness fields are completed.
+- Decision owner/timestamp + exception owner (if any) are explicit.
+- Handoff references ADR-019/021/023 and evidence origin.
 
 ### TKT-P1-G17 — Canonical ADR reference hygiene final sweep
 **Goal**: preserve single-source policy references and keep doc tests authoritative.
 
-**Scope**
-- Ensure active docs cite canonical ADR set only.
-- Keep superseded ADRs strictly historical with forward pointers.
-- Keep docs contract tests synchronized with canonical release ADR set (ADR-020 requirement).
-
 **Acceptance criteria**
-- README/ARCHITECTURE/HANDOFF/PRODUCT/ROADMAP are mutually consistent.
+- README/ARCHITECTURE/HANDOFF/PRODUCT/ROADMAP use canonical ADR set through ADR-023.
 - No active policy statement points to superseded ADR files.
-- Canonical set references include ADR-021 where release-policy ADRs are listed.
+- Documentation contract tests and planning artifacts remain synchronized.
 
 ### TKT-P2-A18 — Cursor phase-2 readiness
 **Goal**: phase seek-token evolution without wire-contract changes.
-
-**Scope**
-- Keep `docs/cursor-evolution-phase2-plan.md` current.
-- Define dual-mode parity test matrix (`offset`, `seek`).
-- Capture rollback owner and rollback-switch posture.
 
 **Acceptance criteria**
 - Mixed-token scenarios are explicitly listed and testable.
@@ -137,23 +105,25 @@ Owner: Product/Architecture
 ---
 
 ## 4) Execution order for next coding slice
-1. TKT-P1-G21 (declare Java preflight + verification source)
-2. TKT-P1-G15 (run + reconcile + commit snapshot if needed)
-3. TKT-P1-G22 (declare minimum release test-signal statuses)
-4. TKT-P1-G19 (fill provenance/freshness evidence fields)
-5. TKT-P1-G17 (final documentation hygiene sweep)
-5. TKT-P2-A18 (only after Lane 1 closure)
+1. TKT-P1-G21
+2. TKT-P1-G15
+3. TKT-P1-G22
+4. TKT-P1-G23
+5. TKT-P1-G19
+6. TKT-P1-G17
+7. TKT-P2-A18 (only after Lane 1 closure)
 
 ## 5) Risk register (live)
 - **R1 OpenAPI drift unknown** until Java-21 execution evidence exists.
 - **R2 Evidence staleness risk** if CI result is not tied to PR head SHA and fresh timestamp.
-- **R3 Policy drift risk** if release-policy ADR additions are not synchronized with docs contract tests (ADR-020).
+- **R3 Policy drift risk** if release-policy ADR additions are not synchronized with docs contract tests.
 - **R4 Premature scope expansion risk** if ADR-018 lane/feature-freeze is bypassed.
-- **R5 Toolchain ambiguity risk** if Java preflight/source declaration is omitted from evidence artifacts (ADR-021).
-- **R6 Signal-evidence ambiguity risk** if release claims do not declare minimum parity/runtime/docs/OpenAPI signal outcomes (ADR-022).
+- **R5 Toolchain ambiguity risk** if Java preflight/source declaration is omitted.
+- **R6 Signal ambiguity risk** if required signals are not declared per ADR-022.
+- **R7 Decision ambiguity risk** if normalized status semantics from ADR-023 are not enforced.
 
 ## 6) Canonical references for active release work
-- ADR-012/013/014/015/016/017/018/019/020/021/022
+- ADR-012/013/014/015/016/017/018/019/020/021/022/023
 - `docs/release-evidence.md`
 - `.github/pull_request_template.md`
 - `docs/rest-mcp-readiness-roadmap.md`

@@ -1,6 +1,6 @@
 # REST + MCP Readiness Roadmap
 
-Last updated: 2026-02-24 (PST, ADR-021 Java21 provenance-ladder pass)
+Last updated: 2026-02-24 (PST, ADR-023 signal-status normalization pass)
 Owner: Product/Architecture
 
 ## Sequencing model
@@ -14,6 +14,7 @@ Owner: Product/Architecture
 - Documentation contract coverage + policy-sync rule: **ADR-020**
 - Java21 preflight + verification provenance ladder: **ADR-021**
 - Minimum release test-signal declaration set: **ADR-022**
+- Signal status normalization + NO-GO default rule: **ADR-023**
 
 ## Sprint-ready slices
 
@@ -41,16 +42,24 @@ Owner: Product/Architecture
   - GO/NO-GO timestamp auditable and <=24h from verification
 - Exit criteria: no release claim without SHA parity + freshness proof.
 
-### Slice C — TKT-P1-G17
+### Slice C — TKT-P1-G23
+- Objective: normalize signal status semantics in release evidence and prevent ambiguous GO claims.
+- Deliverables:
+  - release evidence + PR template record `PASS` / `FAIL` / `NOT_RUN` only
+  - explicit NO-GO default when any required signal is `FAIL` or `NOT_RUN`
+  - docs contract test checks for ADR-023 references and normalized-status markers
+- Exit criteria: docs contract test and artifact review both confirm normalized status language.
+
+### Slice D — TKT-P1-G17
 - Objective: final policy-reference hygiene.
 - Deliverables:
   - no active docs referencing superseded ADR variants
   - docs point to canonical ADR set consistently
-  - ADR-020 documentation contract tests remain green with planning artifacts in scope (through ADR-021)
+  - ADR-020 documentation contract tests remain green with planning artifacts in scope (through ADR-023)
   - docs contract tests stay aligned with any release-policy ADR additions
 - Exit criteria: docs contract test and manual doc review agree.
 
-### Slice D — TKT-P2-A18 (post-freeze)
+### Slice E — TKT-P2-A18 (post-freeze)
 - Objective: phase-2 cursor evolution readiness.
 - Deliverables:
   - updated mixed-token parity matrix
