@@ -24,9 +24,9 @@ Owner: Product/Architecture
 ### Not shipped / not release-safe yet
 - ✅ MCP application tool surface implemented via `TaskMcpTools` (`createTask`, `getTask`, `listTasks`, `updateTaskStatus`) sharing existing services.
 - ✅ REST/MCP parity test baseline added (`TaskRestMcpParityTest`) for create, transition, and idempotency-mismatch semantics.
-- ⚠️ MCP transport-level schema/registration verification in a runtime environment is still pending.
+- 🟡 MCP transport-level schema/registration contract tests added at code level (`TaskMcpToolRegistrationContractTest`), but runtime transport-wire verification is still pending.
 - ❌ OpenAPI generation/snapshot/diff gate missing.
-- ❌ Idempotency replay observability counters/log events not standardized.
+- ✅ Idempotency replay observability event markers standardized (`idempotency.first_write`, `idempotency.replay_hit`, `idempotency.mismatch_reject`) with operation dimension.
 
 ---
 
@@ -144,3 +144,13 @@ Owner: Product/Architecture
 - MCP implementation delay increases chance of semantic drift from REST.
 - OpenAPI drift without CI gate can create silent breaking changes.
 - Deferred project DTOs in API package can confuse clients about supported v1 surface.
+
+## 6) Developer update (2026-02-24 run)
+- Added REST error-code lock suite: src/test/java/agent/tracker/service/api/ErrorCatalogContractTest.java (ADR-003/004/006 guardrail).
+- Added idempotency observability hooks and signals:
+  - interface: IdempotencyTelemetry
+  - default implementation: LoggingIdempotencyTelemetry
+  - emitted markers: idempotency.first_write, idempotency.replay_hit, idempotency.mismatch_reject (with operation name).
+  - tests: TaskCommandServiceObservabilityTest
+- Added MCP tool registration/schema guardrail test: TaskMcpToolRegistrationContractTest (code-level contract; runtime wire check still pending).
+- Next planning focus: TKT-P0-B1 OpenAPI snapshot + CI drift gate, and TKT-P0-A3 runtime MCP smoke registration check in CI.

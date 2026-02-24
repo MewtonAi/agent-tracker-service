@@ -2,6 +2,7 @@ package agent.tracker.service.application;
 
 import agent.tracker.service.domain.contract.CreateTaskCommand;
 import agent.tracker.service.domain.contract.UpdateTaskStatusCommand;
+import agent.tracker.service.domain.exception.IdempotencyKeyReuseMismatchException;
 import agent.tracker.service.domain.exception.NotFoundException;
 import agent.tracker.service.domain.model.AuditMetadata;
 import agent.tracker.service.domain.model.Task;
@@ -9,6 +10,7 @@ import agent.tracker.service.domain.model.TaskPriority;
 import agent.tracker.service.domain.model.TaskStatus;
 import agent.tracker.service.domain.model.TaskType;
 import agent.tracker.service.domain.policy.TaskTransitionPolicy;
+import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -19,17 +21,41 @@ import java.util.UUID;
 @Singleton
 public class TaskCommandService {
 
+    private static final String OP_CREATE_TASK = "create_task";
+    private static final String OP_UPDATE_TASK_STATUS = "update_task_status";
+
     private final TaskStore store;
+    private final IdempotencyTelemetry idempotencyTelemetry;
+
+    @Inject
+    public TaskCommandService(TaskStore store, IdempotencyTelemetry idempotencyTelemetry) {
+        this.store = store;
+        this.idempotencyTelemetry = idempotencyTelemetry;
+    }
 
     public TaskCommandService(TaskStore store) {
-        this.store = store;
+        this(store, new IdempotencyTelemetry() {
+            @Override
+            public void firstWrite(String operation) {
+            }
+
+            @Override
+            public void replayHit(String operation) {
+            }
+
+            @Override
+            public void mismatchReject(String operation) {
+            }
+        });
     }
 
     public Task createTask(CreateTaskCommand command) {
         String idempotencyKey = requireText(command.idempotencyKey(), "idempotencyKey");
         String payloadHash = hashPayload("create", command.title(), command.description(), command.taskType(), command.priority(), command.createdBy());
-        Task existing = store.findCreateReplay(idempotencyKey, payloadHash);
+
+        Task existing = findCreateReplay(idempotencyKey, payloadHash);
         if (existing != null) {
+            idempotencyTelemetry.replayHit(OP_CREATE_TASK);
             return existing;
         }
 
@@ -54,14 +80,17 @@ public class TaskCommandService {
 
         Task saved = store.save(task);
         store.saveCreateReplay(idempotencyKey, payloadHash, saved);
+        idempotencyTelemetry.firstWrite(OP_CREATE_TASK);
         return saved;
     }
 
     public Task updateTaskStatus(UpdateTaskStatusCommand command) {
         String idempotencyKey = requireText(command.idempotencyKey(), "idempotencyKey");
         String payloadHash = hashPayload("update-status", command.taskId(), command.status(), command.updatedBy());
-        Task existingReplay = store.findStatusReplay(command.taskId(), idempotencyKey, payloadHash);
+
+        Task existingReplay = findStatusReplay(command.taskId(), idempotencyKey, payloadHash);
         if (existingReplay != null) {
+            idempotencyTelemetry.replayHit(OP_UPDATE_TASK_STATUS);
             return existingReplay;
         }
 
@@ -78,7 +107,26 @@ public class TaskCommandService {
 
         Task saved = store.save(updated);
         store.saveStatusReplay(command.taskId(), idempotencyKey, payloadHash, saved);
+        idempotencyTelemetry.firstWrite(OP_UPDATE_TASK_STATUS);
         return saved;
+    }
+
+    private Task findCreateReplay(String idempotencyKey, String payloadHash) {
+        try {
+            return store.findCreateReplay(idempotencyKey, payloadHash);
+        } catch (IdempotencyKeyReuseMismatchException exception) {
+            idempotencyTelemetry.mismatchReject(OP_CREATE_TASK);
+            throw exception;
+        }
+    }
+
+    private Task findStatusReplay(String taskId, String idempotencyKey, String payloadHash) {
+        try {
+            return store.findStatusReplay(taskId, idempotencyKey, payloadHash);
+        } catch (IdempotencyKeyReuseMismatchException exception) {
+            idempotencyTelemetry.mismatchReject(OP_UPDATE_TASK_STATUS);
+            throw exception;
+        }
     }
 
     private static String requireText(String value, String field) {
