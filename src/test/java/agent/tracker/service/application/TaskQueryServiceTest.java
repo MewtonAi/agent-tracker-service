@@ -45,11 +45,24 @@ class TaskQueryServiceTest {
     }
 
     @Test
+    void shouldAcceptOffsetCursorTokenPrefix() {
+        StubTaskStore store = new StubTaskStore(List.of(task("t-1"), task("t-2"), task("t-3")));
+        TaskQueryService service = new TaskQueryService(store);
+
+        service.listTasks(null, "o:2", 1);
+
+        assertEquals(2, store.lastOffset);
+        assertEquals(1, store.lastLimit);
+    }
+
+    @Test
     void shouldRejectInvalidCursorAndLimitBounds() {
         TaskQueryService service = new TaskQueryService(new StubTaskStore(List.of(task("t-1"))));
 
         assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, "-1", 10));
         assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, "abc", 10));
+        assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, "o:-1", 10));
+        assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, "o:abc", 10));
         assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, null, 0));
         assertThrows(IllegalArgumentException.class, () -> service.listTasks(null, null, 201));
     }

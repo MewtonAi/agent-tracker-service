@@ -112,4 +112,7 @@ Prepare a safe evolution path from pure offset cursor tokens to future seek-styl
 - Rebased planning posture to treat store-level pagination optimization as completed baseline.
 - Added forward-looking ticket (TKT-P1-A18) for cursor token evolution compatibility.
 - Added ADR-015 to make cursor evolution contract explicit before implementation.
+- Implemented dual-decode cursor compatibility in `TaskQueryService` (`<n>` and `o:<n>`), while preserving emitted `nextCursor` behavior.
+- Extended pagination tests for compatibility paths in both application and REST/MCP parity suites.
+- Tightened superseded ADR hygiene for ADR-011 with explicit historical/canonical forward pointer.
 - Refreshed handoff sequence to focus next coding slice on OpenAPI gate recovery first.

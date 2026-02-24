@@ -1,9 +1,11 @@
 # ADR-011: MCP Correlation ID Source Policy (Interim)
 
-- **Status:** Superseded by ADR-012
+- **Status:** Superseded (historical only) by `ADR-012-mcp-correlation-id-canonicalization-policy.md`
 - **Date:** 2026-02-24
 - **Deciders:** product/architecture
 - **Related:** `ADR-010-cross-transport-correlation-id-contract.md`, `ARCHITECTURE.md`, `PRODUCT_OWNER_NEXT.md`
+
+> Superseded note: This ADR is retained for historical context only. Active MCP correlation policy is defined in `ADR-012-mcp-correlation-id-canonicalization-policy.md`.
 
 ## Context
 ADR-010 locked the requirement that MCP failures expose `correlationId`, but it did not define how MCP should treat caller-supplied IDs.

@@ -3,11 +3,15 @@
 Last updated: 2026-02-24 (PST, product/architecture continuity)
 
 ## What was accomplished in this pass
-- Re-inspected code/docs/CI status for current REST + MCP readiness.
-- Updated prioritized backlog and ticket quality in `PRODUCT_OWNER_NEXT.md`.
-- Added new decision record:
-  - `ADR-015-cursor-token-evolution-and-backward-compatibility.md`
-- Refreshed architecture/readme to align with current priorities and ADR references.
+- Implemented ADR-015 cursor evolution compatibility in `TaskQueryService`:
+  - accepted `cursor` forms `<n>` and `o:<n>`
+  - retained emitted `nextCursor` behavior for backward compatibility
+- Extended tests for compatibility and parity:
+  - `TaskQueryServiceTest` now covers prefixed cursor acceptance/rejection paths
+  - `TaskRestMcpParityTest` now verifies parity when page-2 uses `o:<cursor>`
+- Added and referenced `ADR-015-cursor-token-evolution-and-backward-compatibility.md`.
+- Tightened superseded ADR hygiene by adding explicit historical/canonical pointer in `ADR-011-mcp-correlation-id-source-policy.md`.
+- Updated planning/docs references to align with post-implementation priorities.
 
 ## Current state to assume
 1. **CI gate:** `./gradlew check` on JDK 21.
@@ -24,8 +28,8 @@ Last updated: 2026-02-24 (PST, product/architecture continuity)
    - `./gradlew updateOpenApiSnapshot`
    - `./gradlew check`
    - commit `openapi/openapi.yaml` if regenerated
-2. Complete any remaining ADR reference hygiene if stale links are discovered.
-3. Start ADR-015 implementation slice (dual cursor decode + parity tests) without changing external envelope names.
+2. Confirm CI pass and lock G15 completion with OpenAPI snapshot parity checks.
+3. Continue reliability hardening tickets (auth boundaries/outbox/retention) after release gate recovery.
 
 ## Environment caveat for this run
 - No local Java runtime available in this shell (`java` and `JAVA_HOME` missing), so tests/verification were not executed in this pass.

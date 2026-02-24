@@ -53,14 +53,20 @@ public class TaskQueryService {
         if (cursor == null || cursor.isBlank()) {
             return 0;
         }
+
+        String normalized = cursor.trim();
+        if (normalized.regionMatches(true, 0, "o:", 0, 2)) {
+            normalized = normalized.substring(2);
+        }
+
         try {
-            int value = Integer.parseInt(cursor.trim());
+            int value = Integer.parseInt(normalized);
             if (value < 0) {
-                throw new IllegalArgumentException("cursor must be a non-negative integer");
+                throw new IllegalArgumentException("cursor must be a non-negative integer or offset token (o:<n>)");
             }
             return value;
         } catch (NumberFormatException exception) {
-            throw new IllegalArgumentException("cursor must be a non-negative integer");
+            throw new IllegalArgumentException("cursor must be a non-negative integer or offset token (o:<n>)");
         }
     }
 }

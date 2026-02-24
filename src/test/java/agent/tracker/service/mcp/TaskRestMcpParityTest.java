@@ -205,11 +205,17 @@ class TaskRestMcpParityTest {
         ListTasksResponse restPage2 = client.toBlocking().retrieve(HttpRequest.GET("/v1/tasks?limit=2&cursor=" + restPage1.nextCursor()), ListTasksResponse.class);
         assertTrue(restPage2.tasks().size() >= 1);
 
+        ListTasksResponse restPage2WithOffsetToken = client.toBlocking().retrieve(HttpRequest.GET("/v1/tasks?limit=2&cursor=o:" + restPage1.nextCursor()), ListTasksResponse.class);
+        assertEquals(restPage2.tasks().size(), restPage2WithOffsetToken.tasks().size());
+
         TaskMcpTools.ListTasksToolResponse mcpPage1 = mcpTools.listTasks(new TaskMcpTools.ListTasksToolRequest(null, null, 2, null));
         assertEquals(restPage1.tasks().size(), mcpPage1.tasks().size());
         assertEquals(restPage1.nextCursor(), mcpPage1.nextCursor());
 
         TaskMcpTools.ListTasksToolResponse mcpPage2 = mcpTools.listTasks(new TaskMcpTools.ListTasksToolRequest(null, mcpPage1.nextCursor(), 2, null));
         assertEquals(restPage2.tasks().size(), mcpPage2.tasks().size());
+
+        TaskMcpTools.ListTasksToolResponse mcpPage2WithOffsetToken = mcpTools.listTasks(new TaskMcpTools.ListTasksToolRequest(null, "o:" + mcpPage1.nextCursor(), 2, null));
+        assertEquals(restPage2.tasks().size(), mcpPage2WithOffsetToken.tasks().size());
     }
 }
