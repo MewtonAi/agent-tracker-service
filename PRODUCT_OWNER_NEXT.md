@@ -6,25 +6,26 @@ Owner: Product/Architecture
 ## 1) Code-verified implementation snapshot
 
 ### Shipped now
-- ✅ Canonical v1 execution path is **Task-first** and REST-operational.
-- ✅ Lifecycle + transition policy are enforced in domain/application flow.
+- ✅ Task-first v1 REST execution path is operational.
+- ✅ Lifecycle and transition policy are enforced in domain/application flow.
 - ✅ REST endpoints shipped:
   - `POST /v1/tasks` (Idempotency-Key required)
   - `GET /v1/tasks/{id}`
   - `GET /v1/tasks?status=`
   - `PATCH /v1/tasks/{id}/status` (Idempotency-Key required)
-- ✅ Invalid `status` query now returns explicit contract-level 400 (`BAD_REQUEST`).
+- ✅ Invalid `status` query returns explicit 400 (`BAD_REQUEST`).
 - ✅ Concurrency conflicts map to stable code `CONCURRENT_MODIFICATION`.
-- ✅ Mongo persistence seam exists with optimistic locking (`@Version`).
+- ✅ Durable idempotency v2 is in place:
+  - unique scope `(operation,key)`
+  - payload fingerprint mismatch rejection (`IDEMPOTENCY_KEY_REUSE_MISMATCH`)
+  - TTL index on explicit `expiresAt`
+  - retention configurable via `idempotency.ttl-hours` (default 48h)
 
 ### Not shipped / not release-safe yet
 - ❌ MCP tool surface not implemented (`create_task`, `get_task`, `list_tasks`, `update_task_status`).
 - ❌ REST/MCP parity suite not implemented.
-- ✅ Durable idempotency v2 baseline shipped:
-  - unique idempotency scope uses `(operation,key)`
-  - payload fingerprint mismatch rejects with stable 409 code
-  - TTL uses explicit `expiresAt` field (default retention 48h)
 - ❌ OpenAPI generation/snapshot/diff gate missing.
+- ❌ Idempotency replay observability counters/log events not standardized.
 
 ---
 
@@ -32,31 +33,23 @@ Owner: Product/Architecture
 
 ## P0 — MVP release gate
 
-### EPIC P0-A: Idempotency v2 completion (highest risk)
-1. **TKT-P0-A1 — Schema/index v2 rollout (ADR-005)**
-   - Add explicit fields: `operation`, `key`, `payloadHash`, `resultRef`, `expiresAt`, timestamps.
-   - Add unique index on `(operation,key)` and TTL index on `expiresAt`.
-   - Phase A dual-read compatibility, Phase B cleanup.
+### EPIC P0-A: MCP delivery + semantic parity (highest impact)
+1. **TKT-P0-A1 — Implement 4 MCP tools via shared services**
+2. **TKT-P0-A2 — REST/MCP parity scenario suite in CI**
 
-2. **TKT-P0-A2 — Mismatch policy enforcement**
-   - Same `(operation,key)` + different payload hash => 409 `IDEMPOTENCY_KEY_REUSE_MISMATCH`.
+### EPIC P0-B: Contract governance
+3. **TKT-P0-B1 — OpenAPI generation + snapshot + drift gate**
+4. **TKT-P0-B2 — Error catalog lock tests (`code` stability)**
 
-3. **TKT-P0-A3 — Idempotency observability**
-   - Emit counters/logs: `idempotency.first_write`, `idempotency.replay_hit`, `idempotency.mismatch_reject`, `idempotency.legacy_fallback_hit`.
+### EPIC P0-C: Idempotency operations readiness
+5. **TKT-P0-C1 — Idempotency replay observability**
+6. **TKT-P0-C2 — Migration decision log: confirm whether legacy fallback is required; if not, document v2-only posture explicitly**
 
-### EPIC P0-B: MCP tool delivery + parity
-4. **TKT-P0-B1 — Implement 4 MCP tools via shared services**
-5. **TKT-P0-B2 — REST/MCP parity scenario suite in CI**
-
-### EPIC P0-C: Contract governance
-6. **TKT-P0-C1 — OpenAPI generation + snapshot + drift gate**
-7. **TKT-P0-C2 — Error catalog lock tests (`code` stability)**
-
-## P1 — Post-MVP
+## P1 — Post-MVP hardening
 - Cursor pagination for list API
 - Task event timeline/read model
 - Metrics dashboard and baseline SLOs
-- Remove stale/deferred project-surface artifacts from public contracts
+- Remove stale/deferred project-surface DTO/contracts from public API package
 
 ## P2 — Strategic
 - Outbox/event publishing
@@ -67,63 +60,72 @@ Owner: Product/Architecture
 
 ## 3) Implementation-ready tickets (with acceptance criteria)
 
-### TKT-P0-A1 — Idempotency schema/index v2 rollout
+### TKT-P0-A1 — MCP 4-tool adapter
 **Scope**
-- Introduce v2 document/index model and rollout-safe read/write strategy.
+- Add MCP tools: `create_task`, `get_task`, `list_tasks`, `update_task_status`.
+- Keep transport mapping thin; no business-rule duplication.
 
 **Acceptance criteria**
-- New writes persist `operation,key,payloadHash,resultRef,expiresAt`.
-- Startup creates unique `(operation,key)` + TTL(`expiresAt`) indexes.
-- Replay path checks v2 first; optional legacy fallback is feature-flagged/config-bounded.
-- Integration test proves replay continuity for pre-v2 and v2 records during compatibility window.
+- Tool schemas enforce same required fields/validation semantics as REST.
+- Tool handlers delegate to existing application services.
+- Tool error responses map to same semantic code set as REST.
+- Tests cover happy path, not found, invalid transition, replay, mismatch.
 
-### TKT-P0-A2 — Idempotency mismatch rejection
+### TKT-P0-A2 — REST/MCP parity suite
 **Scope**
-- Detect payload mismatch and reject deterministically.
-
-**Acceptance criteria**
-- Same operation+key+same payload => replay success.
-- Same operation+key+different payload => HTTP 409, `IDEMPOTENCY_KEY_REUSE_MISMATCH`.
-- Error response keeps RFC7807 shape + correlation ID.
-
-### TKT-P0-B1 — MCP 4-tool adapter
-**Scope**
-- Add MCP tools: create/get/list/update-status.
-- Keep transport mapping thin; no business rule duplication.
-
-**Acceptance criteria**
-- Tool schema validation mirrors REST constraints.
-- Tool errors map to same semantic code set as REST.
-- Unit/integration tests cover happy path, not found, invalid transition, replay, mismatch.
-
-### TKT-P0-B2 — REST/MCP parity suite
-**Scope**
-- Scenario-driven parity harness running identical intent via both adapters.
+- Scenario-driven parity harness runs identical intent through both adapters.
 
 **Acceptance criteria**
 - Equivalent final state across adapters.
 - Equivalent error category/code across adapters.
 - CI job fails on parity drift.
 
-### TKT-P0-C1 — OpenAPI contract lock
+### TKT-P0-B1 — OpenAPI contract lock
 **Scope**
-- Generate and check in `openapi.yaml`; enforce diff gate in CI.
+- Generate and check in `openapi.yaml`; enforce snapshot drift gate in CI.
 
 **Acceptance criteria**
-- Snapshot is versioned in repo.
-- CI fails on contract drift unless snapshot update is explicit in PR.
+- Snapshot file versioned in repo.
+- CI fails on drift unless snapshot update is explicit in PR.
+- Error examples include `CONCURRENT_MODIFICATION` and `IDEMPOTENCY_KEY_REUSE_MISMATCH`.
+
+### TKT-P0-B2 — Error catalog stability tests
+**Scope**
+- Lock externally visible `code` values used by REST errors.
+
+**Acceptance criteria**
+- Contract tests fail on unreviewed code renames/removals.
+- ADR references included in test documentation/comments.
+
+### TKT-P0-C1 — Idempotency replay observability
+**Scope**
+- Emit structured counters/logs for replay lifecycle.
+
+**Acceptance criteria**
+- Counters/log markers: `idempotency.first_write`, `idempotency.replay_hit`, `idempotency.mismatch_reject`.
+- Metric/log dimensions include operation name.
+- Replay/mismatch integration tests assert signal emission (or equivalent hook).
+
+### TKT-P0-C2 — Legacy migration decision record
+**Scope**
+- Decide and document whether legacy key-only fallback exists/needed for this repo lineage.
+
+**Acceptance criteria**
+- ADR/architecture note explicitly states migration posture.
+- If fallback required, grace window + removal criterion defined.
+- If not required, fallback path is prohibited by tests/docs.
 
 ---
 
 ## 4) Recommended execution order (next 2 slices)
 
-**Slice 1 (risk retirement):** TKT-P0-A1, TKT-P0-A2, TKT-P0-A3
+**Slice 1 (MVP unlock):** TKT-P0-A1, TKT-P0-A2
 
-**Slice 2 (feature completion):** TKT-P0-B1, TKT-P0-B2, TKT-P0-C1, TKT-P0-C2
+**Slice 2 (contract + ops hardening):** TKT-P0-B1, TKT-P0-B2, TKT-P0-C1, TKT-P0-C2
 
 ---
 
 ## 5) Active risks to monitor
-- Hardcoded Mongo DB name in index initializer may diverge from runtime config.
-- Migration complexity if legacy idempotency read-path is left unbounded.
-- MCP delay increases chance of semantic drift between adapters.
+- MCP implementation delay increases chance of semantic drift from REST.
+- OpenAPI drift without CI gate can create silent breaking changes.
+- Deferred project DTOs in API package can confuse clients about supported v1 surface.

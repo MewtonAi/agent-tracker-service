@@ -1,46 +1,44 @@
 # ADR-004: Finalize Concurrency and Idempotency-Mismatch API Contract
 
-- **Status:** Accepted (implementation in progress)
+- **Status:** Accepted
 - **Date:** 2026-02-23
 - **Last updated:** 2026-02-24
 - **Deciders:** product/architecture, backend maintainers
-- **Related:** `ADR-003-idempotency-and-concurrency-contract.md`, `ARCHITECTURE.md`
+- **Related:** `ADR-003-idempotency-and-concurrency-contract.md`, `ADR-005-idempotency-v2-rollout-strategy.md`, `ARCHITECTURE.md`
 
 ## Context
-Current implementation supports optimistic locking and idempotency replay but left two externally visible behaviors under-specified:
-1. Which stable error code should represent optimistic-lock write conflicts.
-2. What should happen when the same idempotency key is reused with a different payload.
+Two externally visible behaviors required hard contract decisions:
+1. Which stable error code represents optimistic-lock write conflicts.
+2. What happens when the same idempotency key is reused with a different payload.
 
-This ambiguity risks adapter drift and client retry bugs, especially once MCP tools are added.
+These decisions are foundational for safe retries and for REST/MCP parity.
 
 ## Decision
 1. **Concurrency conflicts use:** `CONCURRENT_MODIFICATION` (HTTP 409).
-2. **Idempotency mismatch policy:** reject key reuse with different payload for same operation using HTTP 409 and code `IDEMPOTENCY_KEY_REUSE_MISMATCH`.
+2. **Idempotency mismatch policy:** reject same `(operation,key)` with different payload using HTTP 409 and code `IDEMPOTENCY_KEY_REUSE_MISMATCH`.
 3. **Idempotency uniqueness scope:** `(operation, key)`.
-4. **Idempotency records persist:** `operation`, `key`, `payloadHash`, `resultRef`, `expiresAt`, `createdAt`.
+4. **Idempotency records persist:** `operation`, `key`, `payloadHash`, `resultRef`, `expiresAt`, `createdAt`, `updatedAt`.
 
 ## Why
-- Gives clients deterministic, contract-safe retry semantics.
-- Prevents silent data corruption from accidental key reuse.
-- Keeps REST and future MCP behavior aligned by policy.
+- Deterministic client retry semantics.
+- Explicit rejection of unsafe key reuse.
+- Shared policy surface for REST and future MCP adapters.
 
 ## Consequences
 ### Positive
-- Clear operational signals for retries vs conflicts.
-- Easier parity tests and contract governance.
+- Stable conflict taxonomy for clients and telemetry.
+- Reduced adapter drift risk once MCP tools are added.
 
 ### Tradeoffs
-- Requires payload canonicalization/hashing strategy.
-- Adds storage and validation complexity to mutation path.
+- Requires payload-hash consistency and contract tests.
+- Adds persistence/index complexity for mutation paths.
 
-## Implementation status (as of 2026-02-24)
-- ✅ `CONCURRENT_MODIFICATION` is emitted by REST error mapping and covered by test.
-- ❌ `IDEMPOTENCY_KEY_REUSE_MISMATCH` is not yet implemented.
-- ❌ Mongo idempotency uniqueness is still key-only; operation scope not yet applied.
-- ❌ TTL uses `createdAt` with relative expiry; target contract is explicit `expiresAt` TTL index.
+## Implementation status (verified 2026-02-24)
+- ✅ `CONCURRENT_MODIFICATION` mapped in API handler + tests.
+- ✅ `IDEMPOTENCY_KEY_REUSE_MISMATCH` mapped in API handler + tests.
+- ✅ Mongo idempotency uniqueness uses `(operation,key)`.
+- ✅ TTL index uses explicit `expiresAt`.
 
-## Implementation notes
-- Update `ApiExceptionHandler`/tests for mismatch mapping.
-- Evolve idempotency document/index model to include operation and payload hash.
-- Add explicit replay/mismatch integration tests.
-- Update error catalog documentation and OpenAPI examples.
+## Guardrails
+- Any change to these codes requires ADR + error-catalog/openapi updates.
+- MCP transport must reuse the same application/store behavior; no MCP-only conflict semantics.

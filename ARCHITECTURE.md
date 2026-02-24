@@ -11,6 +11,7 @@ Task-first system of record for agent work tracking, exposed via REST and prepar
 - Mutations require idempotency key (`Idempotency-Key` in REST; equivalent field in MCP tools)
 - REST and MCP adapters share application services (no transport-specific business rules)
 - Optimistic-write conflicts map to stable code: `CONCURRENT_MODIFICATION` (HTTP 409)
+- Idempotency mismatch maps to stable code: `IDEMPOTENCY_KEY_REUSE_MISMATCH` (HTTP 409)
 
 ## Layered design
 - **api**: REST controllers + global error mapping (RFC7807-style)
@@ -36,13 +37,11 @@ Current mapped codes:
 - `TASK_NOT_FOUND` (404)
 - `INVALID_TASK_TRANSITION` (409)
 - `CONCURRENT_MODIFICATION` (409)
+- `IDEMPOTENCY_KEY_REUSE_MISMATCH` (409)
 - `TASK_CONFLICT` (409; generic conflict bucket, keep usage narrow)
 - `VALIDATION_FAILED` (400)
 - `BAD_REQUEST` (400)
 - `INTERNAL_ERROR` (500)
-
-Planned additional code:
-- `IDEMPOTENCY_KEY_REUSE_MISMATCH` (409)
 
 `X-Correlation-Id` is echoed from request or generated when missing.
 
@@ -50,20 +49,19 @@ Planned additional code:
 Implemented:
 - `TaskDocument` with `@Version` optimistic locking
 - `MongoTaskStore` adapter + repositories
-- startup index initializer currently creates:
+- startup index initializer creates:
   - `tasks`: `{ status: 1, updatedAt: -1 }`
   - `tasks`: `{ updatedAt: -1 }`
-  - `idempotency_records`: unique `{ key: 1 }`
-  - `idempotency_records`: TTL on `createdAt` (hours-based)
+  - `idempotency_records`: unique `{ operation: 1, key: 1 }`
+  - `idempotency_records`: TTL on `expiresAt`
+- idempotency TTL retention configurable (`idempotency.ttl-hours`, default 48h)
 
-Open gaps before MVP GA:
-- DB/collection targeting in index initializer currently hardcoded (`agent_tracker`)
-- idempotency schema/indexes are not yet ADR-compliant (`(operation,key)`, `payloadHash`, `expiresAt`)
-- idempotency mismatch rejection (`IDEMPOTENCY_KEY_REUSE_MISMATCH`) not implemented
+Remaining MVP-critical gaps:
 - MCP adapter + parity suite absent
 - OpenAPI snapshot/diff governance absent
+- Idempotency replay observability counters not yet emitted (`first_write`, `replay_hit`, `mismatch_reject`)
 
 ## Current architectural focus (next)
-1. Implement idempotency v2 rollout (ADR-005): dual-read compatibility, v2 writes, then cleanup.
-2. Deliver MCP tools through shared services only.
-3. Add parity and contract-governance gates in CI (REST↔MCP scenarios + OpenAPI drift check).
+1. Deliver MCP tool surface through shared services only.
+2. Add parity and contract-governance gates in CI (REST↔MCP scenarios + OpenAPI drift check).
+3. Add idempotency replay observability and explicit legacy-migration note/decision log.
