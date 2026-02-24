@@ -1,115 +1,115 @@
 # PRODUCT_OWNER_NEXT.md
 
-Last updated: 2026-02-24 (PST, product/architecture continuity pass)
+Last updated: 2026-02-24 (PST, product/architecture backlog refinement pass)
 Owner: Product/Architecture
 
-## 1) Latest inspection snapshot (code/docs/tests/CI)
+## 1) Current inspection snapshot (this pass)
 
-### Repo state validated in this pass
-- ✅ REST + MCP parity remains anchored in shared services with explicit parity regression tests (`TaskRestMcpParityTest`).
-- ✅ Cursor compatibility baseline is intact (`<n>` and `o:<n>` decode accepted; unsupported token families rejected).
-- ✅ MCP correlation canonicalization/fallback remains governed by canonical ADR-012.
-- ✅ CI gate still runs `./gradlew check` on JDK 21 (`.github/workflows/ci.yml`).
-- ✅ Release-evidence workflow artifacts are now present:
-  - `docs/release-evidence.md`
-  - `.github/pull_request_template.md`
-  - policy captured in `ADR-017-release-evidence-artifact-and-pr-template-policy.md`
+### Code + tests + docs
+- ✅ REST/MCP parity posture still anchored in shared application services and parity contract tests.
+- ✅ Mongo idempotency replay handling is hardened for stale replay references (missing task result documents), with integration coverage.
+- ✅ Release-readiness contract tests exist (`ReleaseReadinessDocumentationContractTest`) and enforce canonical ADR hygiene across key docs.
+- ✅ CI workflow remains minimal and correct for release confidence (`.github/workflows/ci.yml` -> JDK 21 + `./gradlew check`).
+- ✅ ADR lane sequencing for release-candidate readiness is in place (ADR-018).
 
-### Active risks / unresolved verification
-- ⚠️ Local shell lacks Java runtime (`JAVA_HOME`/`java` missing); no in-shell verification run possible.
-- ⚠️ OpenAPI snapshot freshness remains unverified in this environment until Java 21 run is completed.
+### Runtime verification
+- ⚠️ Local verification still blocked in this shell: Java runtime unavailable (`JAVA_HOME`/`java` missing).
+- ⚠️ As a result, OpenAPI snapshot freshness and full gate outcome remain "CI-only verifiable" for this pass.
 
-### Verification log (this run)
-- Attempted: `./gradlew check`
-- Result: failed immediately with `JAVA_HOME is not set and no 'java' command could be found in your PATH`.
-- Impact: release evidence must be captured from CI/Java-enabled workstation for TKT-P1-G15.
+### Delta introduced in this pass
+- Hardened Mongo idempotency replay lookup to fail soft (null replay) when historical replay record points to a missing task, and added integration coverage for this case.
+- Added ADR-019 to formalize release-evidence provenance + freshness policy.
+- Expanded release-evidence workflow artifacts to include provenance/freshness checks.
+- Added implementation-ready roadmap artifact: `docs/rest-mcp-readiness-roadmap.md`.
 
 ---
 
-## 2) Prioritized roadmap (REST + MCP readiness)
+## 2) Prioritized roadmap (release confidence first)
 
-## P1 — Immediate release confidence
-1. **TKT-P1-G15 — OpenAPI snapshot reconciliation + CI green confirmation** *(next coding slice)*
-2. **TKT-P1-G17 — ADR canonicalization cleanup and reference hygiene** *(final sweep only)*
+### P1 — Lane closure for release candidate
+1. **TKT-P1-G15 — OpenAPI snapshot reconciliation + CI green evidence**
+2. **TKT-P1-G19 — Evidence provenance/freshness enforcement rollout (ADR-019)**
+3. **TKT-P1-G17 — Canonical ADR reference hygiene final sweep**
 
-## P2 — Short-horizon hardening
-3. **TKT-P2-A18 — Cursor evolution phase-2 planning (seek-token emission readiness)**
-4. Authn/authz and tenant boundaries
-5. Domain event/outbox shape for downstream integrations
-6. Archive/retention lifecycle policy
+### P2 — Post-lane hardening (after P1 complete)
+4. **TKT-P2-A18 — Cursor phase-2 (seek token) readiness and parity expansion**
+5. Authn/authz + tenant boundary contracts
+6. Outbox/domain-event baseline and retention policy
 
 ---
 
-## 3) Implementation-ready tickets (acceptance-criteria grade)
+## 3) Implementation-ready tickets
 
-### TKT-P1-G15 — OpenAPI snapshot reconciliation + CI green confirmation
-**Goal**  
-Restore strict OpenAPI gate alignment with currently shipped REST contract.
+### TKT-P1-G15 — OpenAPI snapshot reconciliation + CI green evidence
+**Goal**: eliminate contract drift risk before GO/NO-GO.
 
 **Scope**
-- Run on Java 21 environment:
+- Run in Java 21 environment:
   - `./gradlew updateOpenApiSnapshot`
   - `./gradlew check`
-- Commit regenerated `openapi/openapi.yaml` if changed.
-- Fill release evidence bundle in PR using `docs/release-evidence.md` fields.
+- Commit `openapi/openapi.yaml` if regenerated.
+- Populate release evidence in PR/handoff via `docs/release-evidence.md`.
 
 **Acceptance criteria**
 - `verifyOpenApiSnapshot` passes.
 - `OpenApiSnapshotContractTest` passes.
-- CI workflow is green on PR branch.
-- PR has complete release evidence section (CI URL/SHA, OpenAPI result, parity statement, canonical ADR references).
+- CI run for the PR head SHA is green.
+- Evidence captures CI URL + SHA + OpenAPI diff outcome.
 
-### TKT-P1-G17 — ADR canonicalization cleanup and reference hygiene
-**Goal**  
-Eliminate lingering ADR ambiguity and keep one canonical reference per active contract topic.
-
-**Scope**
-- Ensure architecture/product/handoff docs reference only canonical files (ADR-012/013/014/015/016/017).
-- Keep superseded ADRs explicitly marked historical with forward pointers.
-
-**Acceptance criteria**
-- No planning/architecture doc points to superseded ADR as active policy.
-- Canonical ADR list is consistent across README, ARCHITECTURE, PRODUCT_OWNER_NEXT, handoff notes.
-
-### TKT-P2-A18 — Cursor evolution phase-2 planning (seek-token emission readiness)
-**Goal**  
-Define phase-2 token evolution without changing external fields (`cursor`, `nextCursor`, `limit`).
+### TKT-P1-G19 — Evidence provenance/freshness enforcement rollout
+**Goal**: make GO/NO-GO decisions auditable and time-bounded.
 
 **Scope**
-- Document migration phases and rollback posture.
-- Define mixed-token REST/MCP parity test plan.
-- Maintain canonical planning artifact at `docs/cursor-evolution-phase2-plan.md`.
+- Align PR template + release evidence doc with ADR-019 fields:
+  - evidence source type
+  - commit SHA parity
+  - freshness window status
+- Ensure handoff notes include explicit provenance statement.
 
 **Acceptance criteria**
-- Backward compatibility for legacy offset callers is explicit.
-- Proposed tests cover terminal-page semantics and malformed token handling.
+- PR template contains provenance + freshness checklist items.
+- `docs/release-evidence.md` includes <=24h freshness gate and owner override note.
+- Handoff references ADR-019 and records evidence origin.
+
+### TKT-P1-G17 — Canonical ADR reference hygiene final sweep
+**Goal**: preserve single-source policy references.
+
+**Scope**
+- Ensure active docs cite canonical ADR set only.
+- Keep superseded ADRs strictly historical with forward pointers.
+
+**Acceptance criteria**
+- README/ARCHITECTURE/HANDOFF/PRODUCT docs are mutually consistent.
+- No active policy statement points to superseded ADR files.
+
+### TKT-P2-A18 — Cursor phase-2 readiness
+**Goal**: phase seek-token evolution without wire-contract changes.
+
+**Scope**
+- Keep `docs/cursor-evolution-phase2-plan.md` current.
+- Define dual-mode parity test matrix (`offset`, `seek`).
+- Capture rollback owner and rollback-switch posture.
+
+**Acceptance criteria**
+- Mixed-token scenarios are explicitly listed and testable.
+- Terminal-page and malformed-token behavior remains parity-aligned.
+- OpenAPI field shape remains unchanged (`cursor`, `nextCursor`, `limit`).
 
 ---
 
-## 4) Recommended execution order
-1. **Slice 1:** TKT-P1-G15 (OpenAPI reconciliation + CI confidence)
-2. **Slice 2:** TKT-P1-G17 (canonical reference hygiene final sweep)
-3. **Slice 3:** TKT-P2-A18 (seek-token phase-2 planning)
+## 4) Execution order for next coding slice
+1. TKT-P1-G15 (run + reconcile + commit snapshot if needed)
+2. TKT-P1-G19 (fill provenance/freshness evidence fields)
+3. TKT-P1-G17 (final documentation hygiene sweep)
+4. TKT-P2-A18 (only after Lane 1 closure)
 
-## 5) Active risk register
-- OpenAPI drift remains primary release risk until Java 21 verification is executed and captured.
-- Local runtime gap continues to block in-shell red/green validation.
+## 5) Risk register (live)
+- **R1 OpenAPI drift unknown** until Java-21 execution evidence exists.
+- **R2 Evidence staleness risk** if CI result is not tied to PR head SHA and fresh timestamp.
+- **R3 Premature scope expansion risk** if ADR-018 lane/feature-freeze is bypassed.
 
-## 6) Developer handoff anchor points
-- Canonical CI gate: `./gradlew check` (JDK 21)
-- OpenAPI gate: `verifyOpenApiSnapshot` + `OpenApiSnapshotContractTest`
-- Release evidence template: `docs/release-evidence.md`
-- Canonical ADRs:
-  - `ADR-012-mcp-correlation-id-canonicalization-policy.md`
-  - `ADR-013-task-list-pagination-ordering-contract.md`
-  - `ADR-014-contract-source-of-truth-and-supersession-policy.md`
-  - `ADR-015-cursor-token-evolution-and-backward-compatibility.md`
-  - `ADR-016-release-readiness-evidence-and-go-no-go-gate.md`
-  - `ADR-017-release-evidence-artifact-and-pr-template-policy.md`
-
-## 7) Delta captured in this pass
-- Added ADR-017 to lock release evidence artifact locations and PR template policy.
-- Added `docs/release-evidence.md` as canonical evidence schema.
-- Added `.github/pull_request_template.md` section aligned with ADR-016/017.
-- Updated architecture/README/backlog references to include ADR-017 and evidence artifacts.
-- Revalidated runtime limitation: Java 21 unavailable in this shell (`JAVA_HOME` missing).
+## 6) Canonical references for active release work
+- ADR-012/013/014/015/016/017/018/019
+- `docs/release-evidence.md`
+- `.github/pull_request_template.md`
+- `docs/rest-mcp-readiness-roadmap.md`

@@ -98,11 +98,18 @@ public class MongoTaskStore implements TaskStore {
     }
 
     private Task findReplay(String operation, String key, String payloadHash) {
-        return idempotencyRepository.findByOperationAndKey(operation, key)
-            .map(record -> ensurePayloadMatch(record, key, payloadHash))
-            .map(IdempotencyRecordDocument::resultRef)
-            .map(this::findTaskById)
+        IdempotencyRecordDocument record = idempotencyRepository.findByOperationAndKey(operation, key)
+            .map(existing -> ensurePayloadMatch(existing, key, payloadHash))
             .orElse(null);
+        if (record == null) {
+            return null;
+        }
+
+        Task replayTask = findTaskById(record.resultRef());
+        if (replayTask == null) {
+            LOG.warn("event=idempotency.stale_replay_reference operation={} key={} resultRef={}", operation, key, record.resultRef());
+        }
+        return replayTask;
     }
 
     private IdempotencyRecordDocument ensurePayloadMatch(IdempotencyRecordDocument record, String key, String payloadHash) {

@@ -1,44 +1,50 @@
 # Developer Handoff — REST + MCP Readiness
 
-Last updated: 2026-02-24 (PST, release-evidence workflow pass)
+Last updated: 2026-02-24 (PST, product/architecture continuity pass)
 
 ## What was accomplished in this pass
-- Inspected current code/docs/test/CI posture for REST + MCP readiness.
-- Added **ADR-017** (`ADR-017-release-evidence-artifact-and-pr-template-policy.md`) to formalize where release evidence must live.
-- Added `docs/release-evidence.md` as the canonical evidence schema.
-- Added `.github/pull_request_template.md` with aligned release evidence headings.
-- Updated architecture/product docs to include ADR-017 references.
+- Re-inspected latest code/docs/tests/CI posture for release readiness.
+- Added **ADR-019** (`ADR-019-release-evidence-provenance-and-freshness-policy.md`) to lock evidence source + SHA parity + <=24h freshness policy.
+- Updated release workflow artifacts:
+  - `docs/release-evidence.md` (provenance/freshness checks)
+  - `.github/pull_request_template.md` (canonical ADR set + freshness gate)
+- Added roadmap artifact: `docs/rest-mcp-readiness-roadmap.md` with implementation-ready slice sequencing.
+- Refined backlog/ticket priorities in `PRODUCT_OWNER_NEXT.md`.
 
 ## Current state to assume
-1. **CI gate:** `./gradlew check` on JDK 21 (`.github/workflows/ci.yml`).
-2. **Primary blocker:** OpenAPI snapshot reconciliation/verification still needs Java 21 execution.
-3. **Pagination behavior:** dual-decode compatibility (`<n>` and `o:<n>`) remains supported while emitted `nextCursor` remains offset-compatible.
-4. **Canonical ADR set for active work:**
-   - `ADR-012-mcp-correlation-id-canonicalization-policy.md`
-   - `ADR-013-task-list-pagination-ordering-contract.md`
-   - `ADR-014-contract-source-of-truth-and-supersession-policy.md`
-   - `ADR-015-cursor-token-evolution-and-backward-compatibility.md`
-   - `ADR-016-release-readiness-evidence-and-go-no-go-gate.md`
-   - `ADR-017-release-evidence-artifact-and-pr-template-policy.md`
+1. **CI gate:** `.github/workflows/ci.yml` runs JDK 21 + `./gradlew check`.
+2. **Primary blocker:** OpenAPI snapshot reconciliation still needs Java 21 execution evidence.
+3. **Release lane policy:** ADR-018 feature-freeze applies until Lane 1 closure.
+4. **Evidence policy:** ADR-019 requires source declaration, PR-head SHA parity, and <=24h freshness at GO decision time.
 
-## Next coding slice (recommended order)
-1. **TKT-P1-G15:** run and commit OpenAPI reconciliation on Java 21:
+## Next coding slice (strict order)
+1. **TKT-P1-G15** — run in Java 21 environment:
    - `./gradlew updateOpenApiSnapshot`
    - `./gradlew check`
-2. Complete release evidence fields in PR and handoff using `docs/release-evidence.md`.
-3. **TKT-P1-G17:** run final canonical-reference sweep for any stragglers.
-4. **TKT-P2-A18:** keep phase-2 cursor migration plan updated in `docs/cursor-evolution-phase2-plan.md`.
+   - commit `openapi/openapi.yaml` only if regenerated
+2. **TKT-P1-G19** — complete release evidence + PR template fields with provenance/freshness data.
+3. **TKT-P1-G17** — perform final canonical ADR reference sweep.
+4. **TKT-P2-A18** — continue cursor phase-2 planning only after lane closure.
 
-## Done criteria for immediate next slice
-- PR shows green CI with `./gradlew check`.
-- OpenAPI snapshot is verified (and committed if regenerated).
-- PR + handoff both include evidence fields from `docs/release-evidence.md`:
-  - CI URL + commit SHA
-  - OpenAPI verification outcome and diff status
-  - parity coverage statement
-  - canonical ADR reference list
-  - explicit GO/NO-GO statement
+## Done criteria for immediate slice
+- CI green for PR head SHA.
+- `verifyOpenApiSnapshot` pass outcome captured.
+- `docs/release-evidence.md` populated with:
+  - source type, CI URL, commit SHA
+  - parity statement + OpenAPI diff status
+  - canonical ADR list used
+  - GO/NO-GO decision with owner/timestamp
+  - freshness validation (<=24h)
+
+## Canonical ADR set for active release work
+- `ADR-012-mcp-correlation-id-canonicalization-policy.md`
+- `ADR-013-task-list-pagination-ordering-contract.md`
+- `ADR-014-contract-source-of-truth-and-supersession-policy.md`
+- `ADR-015-cursor-token-evolution-and-backward-compatibility.md`
+- `ADR-016-release-readiness-evidence-and-go-no-go-gate.md`
+- `ADR-017-release-evidence-artifact-and-pr-template-policy.md`
+- `ADR-018-release-candidate-readiness-lanes-and-feature-freeze-policy.md`
+- `ADR-019-release-evidence-provenance-and-freshness-policy.md`
 
 ## Environment caveat for this run
-- No Java runtime in this shell (`java`/`JAVA_HOME` unavailable), so verification execution was not possible in-session.
-- Direct command attempt recorded: `./gradlew check` -> `JAVA_HOME is not set and no 'java' command could be found in your PATH`.
+- Local shell still lacks Java (`JAVA_HOME` not set, `java` not found); in-session test/verification execution remains blocked.

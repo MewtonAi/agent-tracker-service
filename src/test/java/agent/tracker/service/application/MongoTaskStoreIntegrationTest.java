@@ -7,6 +7,9 @@ import agent.tracker.service.domain.model.Task;
 import agent.tracker.service.domain.model.TaskPriority;
 import agent.tracker.service.domain.model.TaskStatus;
 import agent.tracker.service.domain.model.TaskType;
+import agent.tracker.service.infrastructure.mongo.IdempotencyMongoRepository;
+import agent.tracker.service.infrastructure.mongo.IdempotencyRecordDocument;
+import java.time.Instant;
 import io.micronaut.context.annotation.Property;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
@@ -26,6 +29,12 @@ class MongoTaskStoreIntegrationTest {
 
     @Inject
     TaskQueryService queryService;
+
+    @Inject
+    TaskStore taskStore;
+
+    @Inject
+    IdempotencyMongoRepository idempotencyRepository;
 
     @Test
     void shouldPersistAndReplayIdempotentMutations() {
@@ -127,6 +136,25 @@ class MongoTaskStoreIntegrationTest {
                 "mongo-create-mismatch-1"
             ))
         );
+    }
+
+    @Test
+    void shouldReturnNullWhenReplayReferenceTaskNoLongerExists() {
+        Instant now = Instant.now();
+        idempotencyRepository.save(new IdempotencyRecordDocument(
+            "create_task:missing-ref-key",
+            "create_task",
+            "missing-ref-key",
+            "payload-hash",
+            "missing-task-id",
+            now.plusSeconds(3600),
+            now,
+            now
+        ));
+
+        Task replay = taskStore.findCreateReplay("missing-ref-key", "payload-hash");
+
+        assertNull(replay);
     }
 
     @Test
