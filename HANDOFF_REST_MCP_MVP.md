@@ -3,33 +3,37 @@
 Last updated: 2026-02-24 (PST, product/architecture continuity)
 
 ## What was accomplished in this pass
-- Implemented ADR-015 cursor evolution compatibility in `TaskQueryService`:
-  - accepted `cursor` forms `<n>` and `o:<n>`
-  - retained emitted `nextCursor` behavior for backward compatibility
-- Extended tests for compatibility and parity:
-  - `TaskQueryServiceTest` now covers prefixed cursor acceptance/rejection paths
-  - `TaskRestMcpParityTest` now verifies parity when page-2 uses `o:<cursor>`
-- Added and referenced `ADR-015-cursor-token-evolution-and-backward-compatibility.md`.
-- Tightened superseded ADR hygiene by adding explicit historical/canonical pointer in `ADR-011-mcp-correlation-id-source-policy.md`.
-- Updated planning/docs references to align with post-implementation priorities.
+- Inspected current code/docs/test/CI posture for REST + MCP readiness.
+- Added **ADR-016** (`ADR-016-release-readiness-evidence-and-go-no-go-gate.md`) to formalize required release evidence.
+- Updated `ARCHITECTURE.md` governance + focus sections to include ADR-016.
+- Refined `PRODUCT_OWNER_NEXT.md` roadmap and implementation-ready tickets with explicit acceptance criteria and sequence.
 
 ## Current state to assume
-1. **CI gate:** `./gradlew check` on JDK 21.
-2. **Primary blocker:** OpenAPI snapshot likely stale vs shipped pagination fields and should be regenerated under Java 21.
-3. **Pagination internals:** store-level paging seam is already implemented (`TaskStore#listTasksPage` + Mongo `Pageable`/`Slice`).
+1. **CI gate:** `./gradlew check` on JDK 21 (`.github/workflows/ci.yml`).
+2. **Primary blocker:** OpenAPI snapshot still needs Java 21 reconciliation/verification in a runtime-enabled environment.
+3. **Pagination behavior:** dual-decode compatibility (`<n>` and `o:<n>`) exists while emitted `nextCursor` remains backward-compatible numeric offset.
 4. **Canonical ADR set for active work:**
-   - Correlation policy: `ADR-012-mcp-correlation-id-canonicalization-policy.md`
+   - Correlation: `ADR-012-mcp-correlation-id-canonicalization-policy.md`
    - Pagination ordering: `ADR-013-task-list-pagination-ordering-contract.md`
    - Supersession governance: `ADR-014-contract-source-of-truth-and-supersession-policy.md`
    - Cursor evolution compatibility: `ADR-015-cursor-token-evolution-and-backward-compatibility.md`
+   - Release evidence gate: `ADR-016-release-readiness-evidence-and-go-no-go-gate.md`
 
 ## Next coding slice (recommended order)
-1. Run Java 21 verification and snapshot reconciliation:
+1. **TKT-P1-G15:** run and commit OpenAPI reconciliation on Java 21:
    - `./gradlew updateOpenApiSnapshot`
    - `./gradlew check`
-   - commit `openapi/openapi.yaml` if regenerated
-2. Confirm CI pass and lock G15 completion with OpenAPI snapshot parity checks.
-3. Continue reliability hardening tickets (auth boundaries/outbox/retention) after release gate recovery.
+2. **TKT-P1-G19:** wire ADR-016 evidence bundle into repo workflow (PR checklist/template and handoff structure).
+3. **TKT-P1-G17:** final ADR reference hygiene sweep to prevent canonical drift.
+
+## Done criteria for immediate next slice
+- PR shows green CI with `./gradlew check`.
+- OpenAPI snapshot is verified (changed snapshot committed if regenerated).
+- Handoff/PR includes explicit evidence bundle fields from ADR-016:
+  - CI URL + commit SHA
+  - OpenAPI verification outcome
+  - parity coverage statement
+  - canonical ADR reference list
 
 ## Environment caveat for this run
-- No local Java runtime available in this shell (`java` and `JAVA_HOME` missing), so tests/verification were not executed in this pass.
+- No Java runtime in this shell (`java`/`JAVA_HOME` unavailable), so verification execution was not possible in-session.

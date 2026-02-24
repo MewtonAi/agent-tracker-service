@@ -59,6 +59,7 @@ MCP correlation policy (`ADR-012-mcp-correlation-id-canonicalization-policy.md`)
 - CI workflow gate runs `./gradlew check` on push/PR.
 - ADR source-of-truth governance follows `ADR-014-contract-source-of-truth-and-supersession-policy.md` (superseded ADRs are historical, not active policy).
 - Cursor token evolution governance follows `ADR-015-cursor-token-evolution-and-backward-compatibility.md` (cursor remains externally opaque across token format changes).
+- Release go/no-go evidence bundle policy follows `ADR-016-release-readiness-evidence-and-go-no-go-gate.md`.
 
 ## Mongo implementation status
 Implemented:
@@ -75,5 +76,6 @@ Implemented:
 
 ## Active architectural focus (post-MVP)
 1. **OpenAPI snapshot reconciliation for shipped pagination/correlation fields** (run on Java 21, commit regenerated snapshot, restore CI confidence).
-2. **Cursor evolution readiness**: keep offset compatibility while introducing dual-decode path for future seek-style tokens under ADR-015.
-3. Continue API surface hygiene so deferred project artifacts remain internal-only and non-routable.
+2. **Release-evidence gate institutionalization**: enforce ADR-016 evidence bundle in PR/handoff flow so go/no-go remains deterministic.
+3. **Cursor evolution readiness**: keep offset compatibility while introducing dual-decode path for future seek-style tokens under ADR-015.
+4. Continue API surface hygiene so deferred project artifacts remain internal-only and non-routable.

@@ -5,17 +5,19 @@ Owner: Product/Architecture
 
 ## 1) Latest inspection snapshot (code/docs/tests/CI)
 
-### Repo state validated
-- ✅ REST + MCP task surfaces remain parity-tested via shared application services.
-- ✅ Store-level pagination seam is now implemented (`TaskStore#listTasksPage`) and wired through Mongo `Pageable` + `Slice`.
-- ✅ Deterministic ordering contract is implemented in Mongo path (`updatedAt DESC, taskId DESC`) per canonical ADR-013.
-- ✅ MCP correlation canonicalization/fallback behavior is implemented in `TaskMcpTools` and governed by canonical ADR-012.
-- ✅ CI gate remains minimal and clear: `./gradlew check` on JDK 21 (`.github/workflows/ci.yml`).
+### Repo state validated in this pass
+- ✅ REST + MCP parity remains anchored in shared services with explicit parity regression tests (`TaskRestMcpParityTest`).
+- ✅ Pagination evolution baseline is in place:
+  - store seam: `TaskStore#listTasksPage`
+  - deterministic ordering: `updatedAt DESC, taskId DESC` (ADR-013 canonical)
+  - dual-decode cursor compatibility in `TaskQueryService` (`<n>` and `o:<n>`) per ADR-015
+- ✅ MCP correlation canonicalization/fallback is implemented and documented against canonical ADR-012.
+- ✅ CI gate remains intentionally simple (`.github/workflows/ci.yml` runs `./gradlew check` on JDK 21).
 
 ### Active risks / unresolved verification
-- ⚠️ Local execution is blocked in this shell (`java`/`JAVA_HOME` unavailable), so test/CI verification could not be re-run in this pass.
-- ⚠️ `openapi/openapi.yaml` appears stale relative to shipped pagination contract (`limit`, `cursor`, `nextCursor`) and likely fails current marker assertions.
-- ⚠️ Offset cursor remains the external token shape today; scale posture is improved by store paging but still needs documented evolution path for very large offsets.
+- ⚠️ Local shell still lacks Java runtime (`java` not found), so no in-shell test re-run was possible.
+- ⚠️ OpenAPI snapshot may still be stale until regenerated/verified on Java 21 (`updateOpenApiSnapshot` + `check`).
+- ⚠️ Release evidence is still process-fragile unless standardized per PR; this run adds ADR-016 to lock policy.
 
 ---
 
@@ -23,17 +25,16 @@ Owner: Product/Architecture
 
 ## P1 — Immediate release confidence
 
-### EPIC P1-G: Contract governance + release gate confidence
+### EPIC P1-G: Contract governance + deterministic release gates
 1. **TKT-P1-G15 — OpenAPI snapshot reconciliation + CI green confirmation** *(next coding slice)*
-2. **TKT-P1-G17 — ADR canonicalization cleanup and reference hygiene**
-
-### EPIC P1-A: Pagination durability at scale
-3. **TKT-P1-A18 — Cursor evolution readiness (dual-decode strategy + compatibility tests)**
+2. **TKT-P1-G19 — Release evidence bundle wiring (ADR-016) for PR/handoff flow**
+3. **TKT-P1-G17 — ADR canonicalization cleanup and reference hygiene**
 
 ## P2 — Short-horizon platform hardening
-- Authn/authz and tenant boundaries
-- Domain event/outbox shape for downstream integrations
-- Archive/retention lifecycle policy
+4. **TKT-P2-A18 — Cursor evolution phase-2 planning (seek-token emission readiness, no API field breakage)**
+5. Authn/authz and tenant boundaries
+6. Domain event/outbox shape for downstream integrations
+7. Archive/retention lifecycle policy
 
 ---
 
@@ -47,8 +48,8 @@ Restore strict OpenAPI gate alignment with currently shipped REST contract.
 - Run on Java 21 environment:
   - `./gradlew updateOpenApiSnapshot`
   - `./gradlew check`
-- Commit regenerated `openapi/openapi.yaml`.
-- Verify snapshot includes task-list pagination query/response markers (`limit`, `cursor`, `nextCursor`).
+- Commit regenerated `openapi/openapi.yaml` if changed.
+- Verify snapshot contains task-list pagination markers (`limit`, `cursor`, `nextCursor`).
 
 **Acceptance criteria**
 - `verifyOpenApiSnapshot` passes with strict equality.
@@ -57,62 +58,81 @@ Restore strict OpenAPI gate alignment with currently shipped REST contract.
 
 ---
 
+### TKT-P1-G19 — Release evidence bundle wiring (ADR-016)
+**Goal**  
+Make release go/no-go deterministic and auditable by standardizing required verification evidence.
+
+**Scope**
+- Add repository-level checklist artifact (PR template checklist section or dedicated `docs/release-evidence.md` reference).
+- Ensure evidence requires:
+  - CI `./gradlew check` pass on JDK 21 (link + SHA)
+  - OpenAPI snapshot verification outcome and snapshot diff status
+  - statement that parity tests were included via default `check` gate
+  - canonical ADR references only (ADR-012/013/014/015/016)
+- Update handoff template/notes to mirror the same evidence fields.
+
+**Acceptance criteria**
+- A contributor can fill one deterministic evidence bundle without ad-hoc interpretation.
+- Handoff notes and PR checklist use the same required evidence headings.
+- No release PR can claim readiness without explicit OpenAPI/CI/parity evidence.
+
+---
+
 ### TKT-P1-G17 — ADR canonicalization cleanup and reference hygiene
 **Goal**  
 Finish elimination of ADR ambiguity and ensure active references resolve only to canonical files.
 
 **Scope**
-- Apply ADR-014 policy consistently in docs and planning notes.
-- Ensure superseded ADRs are clearly historical and contain explicit forward pointers.
-- Remove any remaining references to superseded ADR variants as active policy.
+- Apply ADR-014 policy consistently in docs/planning notes.
+- Keep superseded ADRs explicitly historical with forward pointers.
+- Prevent reintroduction of duplicate-active references.
 
 **Acceptance criteria**
 - Exactly one canonical ADR filename is referenced per active contract topic in architecture/product docs.
-- Superseded ADRs keep explicit “superseded by” pointers.
-- No newly merged planning docs reintroduce duplicate-active ADR references.
+- Superseded ADRs include explicit “superseded by” pointers.
+- New planning docs do not reintroduce duplicate-active ADR references.
 
 ---
 
-### TKT-P1-A18 — Cursor evolution readiness (dual-decode strategy + compatibility tests)
+### TKT-P2-A18 — Cursor evolution phase-2 planning (seek-token emission readiness)
 **Goal**  
-Prepare a safe evolution path from pure offset cursor tokens to future seek-style tokens without REST/MCP breaking changes.
+Design implementation slice for eventual seek-token emission while preserving current external contract.
 
 **Scope**
-- Implement cursor parser that accepts current offset cursor and an extensible prefixed token format.
-- Preserve response envelope names (`tasks`, `nextCursor`) and existing behavior for offset callers.
-- Add transport-parity tests for mixed cursor formats and terminal page semantics.
-- Document migration constraints in architecture + ADR-015.
+- Keep request/response fields unchanged (`cursor`, `nextCursor`, `limit`).
+- Define phased emission strategy (offset-only -> dual-emit acceptance -> seek emit) without breaking existing clients.
+- Add test-plan outline for REST/MCP parity under mixed token families.
 
 **Acceptance criteria**
-- Existing offset cursor clients remain fully backward compatible.
-- Invalid cursor formats still map to bad request behavior.
-- REST and MCP pagination parity tests cover legacy + prefixed token paths.
-- Docs explicitly define that cursor field is opaque and format-evolvable.
+- Planning doc identifies migration phases and rollback posture.
+- Backward compatibility for legacy offset callers is explicitly preserved.
+- Proposed tests cover terminal-page semantics and malformed token handling.
 
 ---
 
 ## 4) Recommended execution order
 1. **Slice 1:** TKT-P1-G15 (OpenAPI reconciliation + CI confidence)
-2. **Slice 2:** TKT-P1-G17 (ADR/source-of-truth cleanup pass)
-3. **Slice 3:** TKT-P1-A18 (cursor evolution readiness)
+2. **Slice 2:** TKT-P1-G19 (release evidence bundle wiring)
+3. **Slice 3:** TKT-P1-G17 (ADR/source-of-truth cleanup)
+4. **Slice 4:** TKT-P2-A18 (seek-token phase-2 planning)
 
 ## 5) Active risk register
 - OpenAPI drift remains the primary near-term merge/release risk until regenerated on Java 21.
-- Lack of local Java runtime in current environment prevents immediate red/green confirmation.
-- Large-offset pagination can still degrade over time unless cursor evolution work lands.
+- No local Java runtime in this shell continues to block direct red/green verification.
+- Release readiness can still be interpreted inconsistently until ADR-016 evidence bundle is wired into contributor workflow.
 
 ## 6) Developer handoff anchor points
-- Canonical CI gate: `./gradlew check` (JDK 21).
-- Canonical MCP correlation policy: `ADR-012-mcp-correlation-id-canonicalization-policy.md`.
-- Canonical pagination ordering policy: `ADR-013-task-list-pagination-ordering-contract.md`.
-- Canonical supersession governance: `ADR-014-contract-source-of-truth-and-supersession-policy.md`.
-- New cursor evolution strategy: `ADR-015-cursor-token-evolution-and-backward-compatibility.md`.
+- Canonical CI gate: `./gradlew check` (JDK 21)
+- OpenAPI gate: `verifyOpenApiSnapshot` + `OpenApiSnapshotContractTest`
+- Canonical ADRs:
+  - `ADR-012-mcp-correlation-id-canonicalization-policy.md`
+  - `ADR-013-task-list-pagination-ordering-contract.md`
+  - `ADR-014-contract-source-of-truth-and-supersession-policy.md`
+  - `ADR-015-cursor-token-evolution-and-backward-compatibility.md`
+  - `ADR-016-release-readiness-evidence-and-go-no-go-gate.md`
 
 ## 7) Delta captured in this pass
-- Rebased planning posture to treat store-level pagination optimization as completed baseline.
-- Added forward-looking ticket (TKT-P1-A18) for cursor token evolution compatibility.
-- Added ADR-015 to make cursor evolution contract explicit before implementation.
-- Implemented dual-decode cursor compatibility in `TaskQueryService` (`<n>` and `o:<n>`), while preserving emitted `nextCursor` behavior.
-- Extended pagination tests for compatibility paths in both application and REST/MCP parity suites.
-- Tightened superseded ADR hygiene for ADR-011 with explicit historical/canonical forward pointer.
-- Refreshed handoff sequence to focus next coding slice on OpenAPI gate recovery first.
+- Added ADR-016 to formalize release evidence and deterministic go/no-go policy.
+- Updated architecture doc to include ADR-016 governance and focus area.
+- Re-prioritized backlog to insert release-evidence wiring directly after OpenAPI reconciliation.
+- Refreshed ticket acceptance criteria to be implementation-ready for next coding slice.
