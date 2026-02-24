@@ -31,6 +31,7 @@ dependencies {
     runtimeOnly("org.mongodb:mongodb-driver-sync")
     runtimeOnly("org.yaml:snakeyaml")
     testImplementation("io.micronaut:micronaut-http-client")
+    testImplementation("org.yaml:snakeyaml")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
